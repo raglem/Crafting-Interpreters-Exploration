@@ -85,7 +85,42 @@ class Scanner {
 //< two-char-tokens
 //> slash
       case '/':
-        if (match('/')) {
+         if (match('*')) {
+          int nestingSpot = 1;
+          // Traverse until '*' and '/' characters are reached
+          while (!isAtEnd()) {
+            if (peek() == '\n'){
+              line++;
+              advance();
+            }
+            // Handle new nesting
+            else if (peek() == '/' && peekNext() == '*') {
+              nestingSpot++;
+              // Advance for '/' and '*'
+              advance();
+              advance();
+            }
+            // Terminate current nesting
+            else if (peek() == '*' && peekNext() == '/') {
+              nestingSpot--;
+              // Advance for '*' and '/'
+              advance();
+              advance();
+              if (nestingSpot == 0) {
+                break;
+              }
+            }
+            else {
+              advance();
+            }
+          }
+
+          // End of file was reached
+          if (isAtEnd()) {
+            Lox.error(line, "Expected '*/'. Unterminated block comment");
+          }
+        }
+        else if (match('/')) {
           // A comment goes until the end of the line.
           while (peek() != '\n' && !isAtEnd()) advance();
         } else {
