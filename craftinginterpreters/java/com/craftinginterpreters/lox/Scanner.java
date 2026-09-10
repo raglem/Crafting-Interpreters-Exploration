@@ -85,7 +85,8 @@ class Scanner {
 //< two-char-tokens
 //> slash
       case '/':
-         if (match('*')) {
+        // ### MY CODE ###
+        if (match('*')) {
           int nestingSpot = 1;
           // Traverse until '*' and '/' characters are reached
           while (!isAtEnd()) {
@@ -115,11 +116,12 @@ class Scanner {
             }
           }
 
-          // End of file was reached
-          if (isAtEnd()) {
+          // End of file was reached and we're still in the comment block
+          if (isAtEnd() && nestingSpot > 0) {
             Lox.error(line, "Expected '*/'. Unterminated block comment");
           }
         }
+         // ### END OF MY CODE ###
         else if (match('/')) {
           // A comment goes until the end of the line.
           while (peek() != '\n' && !isAtEnd()) advance();
