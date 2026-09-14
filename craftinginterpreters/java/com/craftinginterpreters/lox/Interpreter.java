@@ -268,6 +268,8 @@ class Interpreter implements Expr.Visitor<Object>,
     Object right = evaluate(expr.right); // [left]
 
     switch (expr.operator.type) {
+//> comma-operator, pick rightmost
+      case COMMA: return right;
 //> binary-equality
       case BANG_EQUAL: return !isEqual(left, right);
       case EQUAL_EQUAL: return isEqual(left, right);

@@ -52,7 +52,7 @@ class Parser {
     return equality();
 */
 //> Statements and State expression
-    return assignment();
+    return comma();
 //< Statements and State expression
   }
 //< expression
@@ -286,6 +286,18 @@ class Parser {
     consume(RIGHT_BRACE, "Expect '}' after block.");
     return statements;
   }
+  // ### MY CODE - Chapter 6 Challenge 1 ###
+  private Expr comma() {
+    Expr expr = assignment();
+
+    while (match(COMMA)) {
+      Token operator = previous();
+      Expr right = assignment();
+      expr = new Expr.Binary(expr, operator, right);
+    }
+    return expr;
+  }
+  // ### END OF MY CODE ###
 //< Statements and State block
 //> Statements and State parse-assignment
   private Expr assignment() {
