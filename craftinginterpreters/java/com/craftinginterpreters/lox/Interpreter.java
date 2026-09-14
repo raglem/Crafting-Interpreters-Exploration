@@ -363,6 +363,11 @@ class Interpreter implements Expr.Visitor<Object>,
 //< check-arity
     return function.call(this, arguments);
   }
+  @Override
+  public Void visitTernaryExpr(Expr.Ternary expr) {
+    // Actual evaluation logic is out of scope for this chapter
+    return null;
+  }
 //< Functions visit-call
 //> Classes interpreter-visit-get
   @Override

@@ -288,16 +288,31 @@ class Parser {
   }
   // ### MY CODE - Chapter 6 Challenge 1 ###
   private Expr comma() {
-    Expr expr = assignment();
+    Expr expr = ternary();
 
     while (match(COMMA)) {
       Token operator = previous();
-      Expr right = assignment();
+      Expr right = ternary();
       expr = new Expr.Binary(expr, operator, right);
     }
     return expr;
   }
   // ### END OF MY CODE ###
+
+  // ### MY CODE - Chapter 6 Challenge 2 ###
+  private Expr ternary() {
+    Expr expr = assignment();
+
+    if (match(QUESTION)) {
+      Expr thenExpr = expression();
+      consume(COLON, "Expected ':' after ternary operator");
+      Expr elseExpr = expression();
+      expr = new Expr.Ternary(expr, thenExpr, elseExpr);
+    }
+    return expr;
+  }
+  // ## END OF MY CODE ###
+
 //< Statements and State block
 //> Statements and State parse-assignment
   private Expr assignment() {
