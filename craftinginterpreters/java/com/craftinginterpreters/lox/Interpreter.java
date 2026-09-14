@@ -311,6 +311,16 @@ class Interpreter implements Expr.Visitor<Object>,
           return (String)left + (String)right;
         }
 
+        // ### MY CODE: Chapter 7 Challenge 2 ###
+        if (left instanceof String) {
+          return left + stringify(right);
+        }
+
+        if (right instanceof String) {
+          return stringify(left) + right;
+        }
+        // ## END OF MY CODE
+
 /* Evaluating Expressions binary-plus < Evaluating Expressions string-wrong-type
         break;
 */
