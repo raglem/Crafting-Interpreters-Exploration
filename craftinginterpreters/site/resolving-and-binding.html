@@ -937,7 +937,7 @@ in class <em>Interpreter</em></div>
 <pre class="insert">  <span class="k">private</span> <span class="k">final</span> <span class="t">Map</span>&lt;<span class="t">Expr</span>, <span class="t">Integer</span>&gt; <span class="i">locals</span> = <span class="k">new</span> <span class="t">HashMap</span>&lt;&gt;();
 </pre><pre class="insert-after">
 
-  Interpreter() {
+
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, in class <em>Interpreter</em></div>
 
@@ -967,7 +967,7 @@ class Interpreter implements Expr.Visitor&lt;Object&gt;,
 <p>Our interpreter now has access to each variable&rsquo;s resolved location. Finally, we
 get to make use of that. We replace the visit method for variable expressions
 with this:</p>
-<div class="codehilite"><pre class="insert-before">  public Object visitVariableExpr(Expr.Variable expr) {
+<div class="codehilite"><pre class="insert-before">    }
 </pre><div class="source-file"><em>lox/Interpreter.java</em><br>
 in <em>visitVariableExpr</em>()<br>
 replace 1 line</div>

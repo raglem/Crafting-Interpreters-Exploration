@@ -304,6 +304,8 @@ add after <em>printStatement</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">Stmt</span> <span class="i">expressionStatement</span>() {
     <span class="t">Expr</span> <span class="i">expr</span> = <span class="i">expression</span>();
 
+    <span class="c">// If the statement is actually an expression, we want to set the flag foundExpression to true</span>
+    <span class="c">// When parsing a REPL, we will return an expression instead of a list of statements</span>
     <span class="k">if</span> (<span class="i">allowExpression</span> &amp;&amp; <span class="i">isAtEnd</span>()) {
       <span class="i">foundExpression</span> = <span class="k">true</span>;
     }
@@ -328,7 +330,8 @@ implement since statements have their own base class.</p>
 replace 1 line</div>
 <pre class="insert"><span class="k">class</span> <span class="t">Interpreter</span> <span class="k">implements</span> <span class="t">Expr</span>.<span class="t">Visitor</span>&lt;<span class="t">Object</span>&gt;,
                              <span class="t">Stmt</span>.<span class="t">Visitor</span>&lt;<span class="t">Void</span>&gt; {
-</pre><pre class="insert-after">  void interpret(Expr expression) {<span name="void"> </span>
+</pre><pre class="insert-after">
+
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, replace 1 line</div>
 
@@ -857,7 +860,8 @@ tell the user where in their code they messed up.</p>
 in class <em>Interpreter</em></div>
 <pre class="insert">  <span class="k">private</span> <span class="t">Environment</span> <span class="i">environment</span> = <span class="k">new</span> <span class="t">Environment</span>();
 
-</pre><pre class="insert-after">  void interpret(List&lt;Stmt&gt; statements) {
+</pre><pre class="insert-after">
+
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, in class <em>Interpreter</em></div>
 
@@ -869,7 +873,7 @@ declaration statements.</p>
 add after <em>visitPrintStmt</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitVarStmt</span>(<span class="t">Stmt</span>.<span class="t">Var</span> <span class="i">stmt</span>) {
-    <span class="t">Object</span> <span class="i">value</span> = <span class="k">null</span>;
+    <span class="t">Object</span> <span class="i">value</span> = <span class="i">UNINITIALIZED</span>;
     <span class="k">if</span> (<span class="i">stmt</span>.<span class="i">initializer</span> != <span class="k">null</span>) {
       <span class="i">value</span> = <span class="i">evaluate</span>(<span class="i">stmt</span>.<span class="i">initializer</span>);
     }
@@ -901,6 +905,10 @@ add after <em>visitUnaryExpr</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Object</span> <span class="i">visitVariableExpr</span>(<span class="t">Expr</span>.<span class="t">Variable</span> <span class="i">expr</span>) {
     <span class="k">return</span> <span class="i">environment</span>.<span class="i">get</span>(<span class="i">expr</span>.<span class="i">name</span>);
+<span class="c">// Throw error if variable is equal to UNINITIALIZED object</span>
+    <span class="k">if</span> (<span class="i">lookUpVariable</span>(<span class="i">expr</span>.<span class="i">name</span>, <span class="i">expr</span>).<span class="i">equals</span>(<span class="i">UNINITIALIZED</span>)) {
+      <span class="k">throw</span> <span class="k">new</span> <span class="t">RuntimeError</span>(<span class="i">expr</span>.<span class="i">name</span>, <span class="s">&quot;Variable not initialized&quot;</span>);
+    }
   }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>visitUnaryExpr</em>()</div>

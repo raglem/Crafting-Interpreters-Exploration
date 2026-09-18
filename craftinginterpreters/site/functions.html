@@ -507,7 +507,7 @@ replace 1 line</div>
   <span class="k">private</span> <span class="t">Environment</span> <span class="i">environment</span> = <span class="i">globals</span>;
 </pre><pre class="insert-after">
 
-  void interpret(List&lt;Stmt&gt; statements) {
+
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, in class <em>Interpreter</em>, replace 1 line</div>
 
@@ -516,7 +516,8 @@ scopes. It tracks the <em>current</em> environment. This new <code>globals</code
 fixed reference to the outermost global environment.</p>
 <p>When we instantiate an Interpreter, we stuff the native function in that global
 scope.</p>
-<div class="codehilite"><pre class="insert-before">  private Environment environment = globals;
+<div class="codehilite"><pre class="insert-before">
+
 
 </pre><div class="source-file"><em>lox/Interpreter.java</em><br>
 in class <em>Interpreter</em></div>

@@ -34,6 +34,11 @@ class Interpreter implements Expr.Visitor<Object>,
 //> Statements and State environment-field
 
 //< Statements and State environment-field
+
+// the value for declared but uninitialized values
+  private final Object UNINITIALIZED = new Object();
+
+
 //> Functions interpreter-constructor
   Interpreter() {
     globals.define("clock", new LoxCallable() {
@@ -236,7 +241,7 @@ class Interpreter implements Expr.Visitor<Object>,
 //> Statements and State visit-var
   @Override
   public Void visitVarStmt(Stmt.Var stmt) {
-    Object value = null;
+    Object value = UNINITIALIZED;
     if (stmt.initializer != null) {
       value = evaluate(stmt.initializer);
     }
@@ -509,6 +514,10 @@ public Void visitTernaryExpr(Expr.Ternary expr) {
 /* Statements and State visit-variable < Resolving and Binding call-look-up-variable
     return environment.get(expr.name);
 */
+// Throw error if variable is equal to UNINITIALIZED object
+    if (lookUpVariable(expr.name, expr).equals(UNINITIALIZED)) {
+      throw new RuntimeError(expr.name, "Variable not initialized");
+    }
 //> Resolving and Binding call-look-up-variable
     return lookUpVariable(expr.name, expr);
 //< Resolving and Binding call-look-up-variable
