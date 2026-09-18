@@ -475,7 +475,7 @@ private boolean foundExpression = false;
           error(peek(), "Can't have more than 255 arguments.");
         }
 //< check-max-arity
-        arguments.add(expression());
+        arguments.add(ternary()); // I ran into an issue passing multiple arguments to functions. I changed this to ternary() because my work with ternary operators broke this behavior.
       } while (match(COMMA));
     }
 

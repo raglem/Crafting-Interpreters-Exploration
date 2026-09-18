@@ -228,7 +228,7 @@ add after <em>unary</em>()</div>
     <span class="t">List</span>&lt;<span class="t">Expr</span>&gt; <span class="i">arguments</span> = <span class="k">new</span> <span class="t">ArrayList</span>&lt;&gt;();
     <span class="k">if</span> (!<span class="i">check</span>(<span class="i">RIGHT_PAREN</span>)) {
       <span class="k">do</span> {
-        <span class="i">arguments</span>.<span class="i">add</span>(<span class="i">expression</span>());
+        <span class="i">arguments</span>.<span class="i">add</span>(<span class="i">ternary</span>()); <span class="c">// I ran into an issue passing multiple arguments to functions. I changed this to ternary() because my work with ternary operators broke this behavior.</span>
       } <span class="k">while</span> (<span class="i">match</span>(<span class="i">COMMA</span>));
     }
 
@@ -271,7 +271,7 @@ in <em>finishCall</em>()</div>
 <pre class="insert">        <span class="k">if</span> (<span class="i">arguments</span>.<span class="i">size</span>() &gt;= <span class="n">255</span>) {
           <span class="i">error</span>(<span class="i">peek</span>(), <span class="s">&quot;Can&#39;t have more than 255 arguments.&quot;</span>);
         }
-</pre><pre class="insert-after">        arguments.add(expression());
+</pre><pre class="insert-after">        arguments.add(ternary()); // I ran into an issue passing multiple arguments to functions. I changed this to ternary() because my work with ternary operators broke this behavior.
 </pre></div>
 <div class="source-file-narrow"><em>lox/Parser.java</em>, in <em>finishCall</em>()</div>
 
