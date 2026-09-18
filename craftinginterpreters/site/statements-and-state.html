@@ -229,6 +229,22 @@ replace 7 lines</div>
 
     <span class="k">return</span> <span class="i">statements</span>;<span name="parse-error-handling"> </span>
   }
+
+  <span class="t">Object</span> <span class="i">parseRepl</span>() {
+    <span class="i">allowExpression</span> = <span class="k">true</span>;
+    <span class="t">List</span>&lt;<span class="t">Stmt</span>&gt; <span class="i">statements</span> = <span class="k">new</span> <span class="t">ArrayList</span>&lt;&gt;();
+    <span class="k">while</span> (!<span class="i">isAtEnd</span>()) {
+      <span class="i">statements</span>.<span class="i">add</span>(<span class="i">declaration</span>());
+
+      <span class="k">if</span> (<span class="i">foundExpression</span>) {
+        <span class="t">Stmt</span> <span class="i">last</span> = <span class="i">statements</span>.<span class="i">get</span>(<span class="i">statements</span>.<span class="i">size</span>() - <span class="n">1</span>);
+        <span class="k">return</span> ((<span class="t">Stmt</span>.<span class="t">Expression</span>) <span class="i">last</span>).<span class="i">expression</span>;
+      }
+
+      <span class="i">allowExpression</span> = <span class="k">false</span>;
+    }
+    <span class="k">return</span> <span class="i">statements</span>;
+  }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Parser.java</em>, method <em>parse</em>(), replace 7 lines</div>
 
@@ -287,7 +303,13 @@ semicolon, and emit the syntax tree.</p>
 add after <em>printStatement</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">Stmt</span> <span class="i">expressionStatement</span>() {
     <span class="t">Expr</span> <span class="i">expr</span> = <span class="i">expression</span>();
-    <span class="i">consume</span>(<span class="i">SEMICOLON</span>, <span class="s">&quot;Expect &#39;;&#39; after expression.&quot;</span>);
+
+    <span class="k">if</span> (<span class="i">allowExpression</span> &amp;&amp; <span class="i">isAtEnd</span>()) {
+      <span class="i">foundExpression</span> = <span class="k">true</span>;
+    }
+    <span class="k">else</span> { <span class="c">// If not expression, it should be treated as statement</span>
+      <span class="i">consume</span>(<span class="i">SEMICOLON</span>, <span class="s">&quot;Expect &#39;;&#39; after expression.&quot;</span>);
+    }
     <span class="k">return</span> <span class="k">new</span> <span class="t">Stmt</span>.<span class="t">Expression</span>(<span class="i">expr</span>);
   }
 </pre></div>
@@ -365,6 +387,19 @@ replace 8 lines</div>
       }
     } <span class="k">catch</span> (<span class="t">RuntimeError</span> <span class="i">error</span>) {
       <span class="t">Lox</span>.<span class="i">runtimeError</span>(<span class="i">error</span>);
+    }
+  }
+
+  <span class="c">// Used to interpret an expression</span>
+  <span class="t">String</span> <span class="i">interpret</span>(<span class="t">Expr</span> <span class="i">expression</span>) {
+    <span class="k">try</span> {
+      <span class="t">Object</span> <span class="i">value</span> = <span class="i">evaluate</span>(<span class="i">expression</span>);
+      <span class="t">String</span> <span class="i">str</span> = <span class="i">stringify</span>(<span class="i">value</span>);
+      <span class="k">return</span> <span class="i">str</span>;
+    }
+    <span class="k">catch</span> (<span class="t">RuntimeError</span> <span class="i">error</span>) {
+      <span class="t">Lox</span>.<span class="i">runtimeError</span>(<span class="i">error</span>);
+      <span class="k">return</span> <span class="k">null</span>;
     }
   }
 </pre></div>

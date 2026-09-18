@@ -19,6 +19,10 @@ class Parser {
   private final List<Token> tokens;
   private int current = 0;
 
+// for parsing expression in REPL
+private boolean allowExpression = true;
+private boolean foundExpression = false;  
+
   Parser(List<Token> tokens) {
     this.tokens = tokens;
   }
@@ -44,6 +48,22 @@ class Parser {
     }
 
     return statements; // [parse-error-handling]
+  }
+
+  Object parseRepl() {
+    allowExpression = true;
+    List<Stmt> statements = new ArrayList<>();
+    while (!isAtEnd()) {
+      statements.add(declaration());
+
+      if (foundExpression) {
+        Stmt last = statements.get(statements.size() - 1);
+        return ((Stmt.Expression) last).expression;
+      }
+
+      allowExpression = false;
+    }
+    return statements;
   }
 //< Statements and State parse
 //> expression
@@ -245,7 +265,15 @@ class Parser {
 //> Statements and State parse-expression-statement
   private Stmt expressionStatement() {
     Expr expr = expression();
-    consume(SEMICOLON, "Expect ';' after expression.");
+
+    // If the statement is actually an expression, we want to set the flag foundExpression to true
+    // When parsing a REPL, we will return an expression instead of a list of statements
+    if (allowExpression && isAtEnd()) {
+      foundExpression = true;
+    }
+    else { // If not expression, it should be treated as statement
+      consume(SEMICOLON, "Expect ';' after expression.");
+    }
     return new Stmt.Expression(expr);
   }
 //< Statements and State parse-expression-statement

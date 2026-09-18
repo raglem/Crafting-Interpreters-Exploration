@@ -72,6 +72,19 @@ class Interpreter implements Expr.Visitor<Object>,
       Lox.runtimeError(error);
     }
   }
+
+  // Used to interpret an expression
+  String interpret(Expr expression) {
+    try {
+      Object value = evaluate(expression);
+      String str = stringify(value);
+      return str;
+    }
+    catch (RuntimeError error) {
+      Lox.runtimeError(error);
+      return null;
+    }
+  }
 //< Statements and State interpret
 //> evaluate
   private Object evaluate(Expr expr) {

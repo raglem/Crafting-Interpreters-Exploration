@@ -193,9 +193,20 @@ add after <em>runFile</em>()</div>
 
     <span class="k">for</span> (;;) {<span name="repl"> </span>
       <span class="t">System</span>.<span class="i">out</span>.<span class="i">print</span>(<span class="s">&quot;&gt; &quot;</span>);
-      <span class="t">String</span> <span class="i">line</span> = <span class="i">reader</span>.<span class="i">readLine</span>();
-      <span class="k">if</span> (<span class="i">line</span> == <span class="k">null</span>) <span class="k">break</span>;
-      <span class="i">run</span>(<span class="i">line</span>);
+      <span class="t">Scanner</span> <span class="i">scanner</span> = <span class="k">new</span> <span class="t">Scanner</span>(<span class="i">reader</span>.<span class="i">readLine</span>());
+      <span class="t">List</span>&lt;<span class="t">Token</span>&gt; <span class="i">tokens</span> = <span class="i">scanner</span>.<span class="i">scanTokens</span>();
+
+      <span class="t">Parser</span> <span class="i">parser</span> = <span class="k">new</span> <span class="t">Parser</span>(<span class="i">tokens</span>);
+      <span class="t">Object</span> <span class="i">syntax</span> = <span class="i">parser</span>.<span class="i">parseRepl</span>();
+
+      <span class="k">if</span> (<span class="i">hadError</span>) <span class="k">continue</span>;
+
+      <span class="k">if</span>(<span class="i">syntax</span> <span class="k">instanceof</span> <span class="t">List</span>) {
+        <span class="i">interpreter</span>.<span class="i">interpret</span>((<span class="t">List</span>&lt;<span class="t">Stmt</span>&gt;)(<span class="i">syntax</span>));
+      } <span class="k">else</span> <span class="k">if</span> (<span class="i">syntax</span> <span class="k">instanceof</span> <span class="t">Expr</span>) {
+        <span class="t">String</span> <span class="i">result</span> = <span class="i">interpreter</span>.<span class="i">interpret</span>((<span class="t">Expr</span>)(<span class="i">syntax</span>));
+        <span class="t">System</span>.<span class="i">out</span>.<span class="i">println</span>(<span class="i">result</span>);
+      }
     }
   }
 </pre></div>
@@ -301,7 +312,7 @@ in <em>runFile</em>()</div>
 
 <p>We need to reset this flag in the interactive loop. If the user makes a mistake,
 it shouldn&rsquo;t kill their entire session.</p>
-<div class="codehilite"><pre class="insert-before">      run(line);
+<div class="codehilite"><pre class="insert-before">      }
 </pre><div class="source-file"><em>lox/Lox.java</em><br>
 in <em>runPrompt</em>()</div>
 <pre class="insert">      <span class="i">hadError</span> = <span class="k">false</span>;

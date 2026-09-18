@@ -431,6 +431,10 @@ create new file</div>
   <span class="k">private</span> <span class="k">final</span> <span class="t">List</span>&lt;<span class="t">Token</span>&gt; <span class="i">tokens</span>;
   <span class="k">private</span> <span class="t">int</span> <span class="i">current</span> = <span class="n">0</span>;
 
+<span class="c">// for parsing expression in REPL</span>
+<span class="k">private</span> <span class="t">boolean</span> <span class="i">allowExpression</span> = <span class="k">true</span>;
+<span class="k">private</span> <span class="t">boolean</span> <span class="i">foundExpression</span> = <span class="k">false</span>;
+
   <span class="t">Parser</span>(<span class="t">List</span>&lt;<span class="t">Token</span>&gt; <span class="i">tokens</span>) {
     <span class="k">this</span>.<span class="i">tokens</span> = <span class="i">tokens</span>;
   }
