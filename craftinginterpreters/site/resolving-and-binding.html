@@ -838,19 +838,26 @@ add after <em>visitBinaryExpr</em>()</div>
 
     <span class="k">return</span> <span class="k">null</span>;
   }
+  <span class="a">@Override</span>
+  <span class="k">public</span> <span class="t">Void</span> <span class="i">visitTernaryExpr</span>(<span class="t">Expr</span>.<span class="t">Ternary</span> <span class="i">expr</span>) {
+    <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">condition</span>);
+    <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">thenExpr</span>);
+    <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">elseExpr</span>);
+    <span class="k">return</span> <span class="k">null</span>;
+  }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>visitBinaryExpr</em>()</div>
 
 <p>Parentheses are easy.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Resolver.java</em><br>
-add after <em>visitCallExpr</em>()</div>
+add after <em>visitTernaryExpr</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitGroupingExpr</span>(<span class="t">Expr</span>.<span class="t">Grouping</span> <span class="i">expr</span>) {
     <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">expression</span>);
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>visitCallExpr</em>()</div>
+<div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>visitTernaryExpr</em>()</div>
 
 <p>Literals are easiest of all.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Resolver.java</em><br>

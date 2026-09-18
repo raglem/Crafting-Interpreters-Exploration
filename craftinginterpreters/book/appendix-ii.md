@@ -158,6 +158,12 @@ State](statements-and-state.html#variable-syntax)".
 
 ^code stmt-var
 
+### Ternary expression
+
+The conditional or ternary expression.
+
+^code expr-ternary
+
 ### While statement
 
 The `while` statement is introduced in "[Control

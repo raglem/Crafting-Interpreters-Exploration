@@ -231,13 +231,13 @@ expressions, which are also leaf nodes.</p>
 in the parser, now we convert the literal tree node into a runtime value. That
 turns out to be trivial.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Interpreter.java</em><br>
-in class <em>Interpreter</em></div>
+add after class <em>Interpreter</em></div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Object</span> <span class="i">visitLiteralExpr</span>(<span class="t">Expr</span>.<span class="t">Literal</span> <span class="i">expr</span>) {
     <span class="k">return</span> <span class="i">expr</span>.<span class="i">value</span>;
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, in class <em>Interpreter</em></div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after class <em>Interpreter</em></div>
 
 <p>We eagerly produced the runtime value way back during scanning and stuffed it in
 the token. The parser took that value and stuck it in the literal tree node,
@@ -246,13 +246,13 @@ so to evaluate a literal, we simply pull it back out.</p>
 <p>The next simplest node to evaluate is grouping<span class="em">&mdash;</span>the node you get as a result
 of using explicit parentheses in an expression.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Interpreter.java</em><br>
-in class <em>Interpreter</em></div>
+add after class <em>Interpreter</em></div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Object</span> <span class="i">visitGroupingExpr</span>(<span class="t">Expr</span>.<span class="t">Grouping</span> <span class="i">expr</span>) {
     <span class="k">return</span> <span class="i">evaluate</span>(<span class="i">expr</span>.<span class="i">expression</span>);
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, in class <em>Interpreter</em></div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after class <em>Interpreter</em></div>
 
 <p>A <span name="grouping">grouping</span> node has a reference to an inner node
 for the expression contained inside the parentheses. To evaluate the grouping
@@ -366,6 +366,8 @@ add after <em>evaluate</em>()</div>
     <span class="t">Object</span> <span class="i">right</span> = <span class="i">evaluate</span>(<span class="i">expr</span>.<span class="i">right</span>);<span name="left"> </span>
 
     <span class="k">switch</span> (<span class="i">expr</span>.<span class="i">operator</span>.<span class="i">type</span>) {
+<span class="c">// comma, assign rightmost</span>
+      <span class="k">case</span> <span class="i">COMMA</span>: <span class="k">return</span> <span class="i">right</span>;
       <span class="k">case</span> <span class="i">MINUS</span>:
         <span class="k">return</span> (<span class="t">double</span>)<span class="i">left</span> - (<span class="t">double</span>)<span class="i">right</span>;
       <span class="k">case</span> <span class="i">SLASH</span>:
@@ -391,7 +393,7 @@ make sure clox does the same thing.</p>
 <p>I think you can figure out what&rsquo;s going on here. The main difference from the
 unary negation operator is that we have two operands to evaluate.</p>
 <p>I left out one arithmetic operator because it&rsquo;s a little special.</p>
-<div class="codehilite"><pre class="insert-before">    switch (expr.operator.type) {
+<div class="codehilite"><pre class="insert-before">      case COMMA: return right;
       case MINUS:
         return (double)left - (double)right;
 </pre><div class="source-file"><em>lox/Interpreter.java</em><br>
@@ -404,6 +406,16 @@ in <em>visitBinaryExpr</em>()</div>
         <span class="k">if</span> (<span class="i">left</span> <span class="k">instanceof</span> <span class="t">String</span> &amp;&amp; <span class="i">right</span> <span class="k">instanceof</span> <span class="t">String</span>) {
           <span class="k">return</span> (<span class="t">String</span>)<span class="i">left</span> + (<span class="t">String</span>)<span class="i">right</span>;
         }
+
+        <span class="c">// ### MY CODE: Chapter 7 Challenge 2 ###</span>
+        <span class="k">if</span> (<span class="i">left</span> <span class="k">instanceof</span> <span class="t">String</span>) {
+          <span class="k">return</span> <span class="i">left</span> + <span class="i">stringify</span>(<span class="i">right</span>);
+        }
+
+        <span class="k">if</span> (<span class="i">right</span> <span class="k">instanceof</span> <span class="t">String</span>) {
+          <span class="k">return</span> <span class="i">stringify</span>(<span class="i">left</span>) + <span class="i">right</span>;
+        }
+        <span class="c">// ## END OF MY CODE</span>
 
         <span class="k">break</span>;
 </pre><pre class="insert-after">      case SLASH:
@@ -424,7 +436,7 @@ languages that don&rsquo;t use <code>+</code> for strings, they still often over
 adding both integers and floating-point numbers.</p>
 </aside>
 <p>Next up are the comparison operators.</p>
-<div class="codehilite"><pre class="insert-before">    switch (expr.operator.type) {
+<div class="codehilite"><pre class="insert-before">      case COMMA: return right;
 </pre><div class="source-file"><em>lox/Interpreter.java</em><br>
 in <em>visitBinaryExpr</em>()</div>
 <pre class="insert">      <span class="k">case</span> <span class="i">GREATER</span>:
@@ -644,6 +656,11 @@ in <em>visitBinaryExpr</em>()</div>
 </pre><div class="source-file"><em>lox/Interpreter.java</em><br>
 in <em>visitBinaryExpr</em>()</div>
 <pre class="insert">        <span class="i">checkNumberOperands</span>(<span class="i">expr</span>.<span class="i">operator</span>, <span class="i">left</span>, <span class="i">right</span>);
+        <span class="c">// ### MY CODE: Chapter 7 Challenge 3 ###</span>
+        <span class="k">if</span> ((<span class="t">double</span>)<span class="i">right</span> == <span class="n">0</span>) {
+          <span class="k">throw</span> <span class="k">new</span> <span class="t">RuntimeError</span>(<span class="i">expr</span>.<span class="i">operator</span>, <span class="s">&quot;Division by 0 not allowed.&quot;</span>);
+        }
+        <span class="c">// ### END OF MY CODE ###</span>
 </pre><pre class="insert-after">        return (double)left / (double)right;
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, in <em>visitBinaryExpr</em>()</div>
@@ -683,8 +700,8 @@ evaluating the right.</p>
 <p>The last remaining operator, again the odd one out, is addition. Since <code>+</code> is
 overloaded for numbers and strings, it already has code to check the types. All
 we need to do is fail if neither of the two success cases match.</p>
-<div class="codehilite"><pre class="insert-before">          return (String)left + (String)right;
-        }
+<div class="codehilite"><pre class="insert-before">        }
+        // ## END OF MY CODE
 
 </pre><div class="source-file"><em>lox/Interpreter.java</em><br>
 in <em>visitBinaryExpr</em>()<br>

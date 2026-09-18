@@ -367,6 +367,7 @@ create new file</div>
   <span class="c">// Single-character tokens.</span>
   <span class="i">LEFT_PAREN</span>, <span class="i">RIGHT_PAREN</span>, <span class="i">LEFT_BRACE</span>, <span class="i">RIGHT_BRACE</span>,
   <span class="i">COMMA</span>, <span class="i">DOT</span>, <span class="i">MINUS</span>, <span class="i">PLUS</span>, <span class="i">SEMICOLON</span>, <span class="i">SLASH</span>, <span class="i">STAR</span>,
+  <span class="i">QUESTION</span>, <span class="i">COLON</span>,
 
   <span class="c">// One or two character tokens.</span>
   <span class="i">BANG</span>, <span class="i">BANG_EQUAL</span>,
@@ -581,6 +582,8 @@ add after <em>scanTokens</em>()</div>
       <span class="k">case</span> <span class="s">&#39;+&#39;</span>: <span class="i">addToken</span>(<span class="i">PLUS</span>); <span class="k">break</span>;
       <span class="k">case</span> <span class="s">&#39;;&#39;</span>: <span class="i">addToken</span>(<span class="i">SEMICOLON</span>); <span class="k">break</span>;
       <span class="k">case</span> <span class="s">&#39;*&#39;</span>: <span class="i">addToken</span>(<span class="i">STAR</span>); <span class="k">break</span>;<span name="slash"> </span>
+      <span class="k">case</span> <span class="s">&#39;?&#39;</span>: <span class="i">addToken</span>(<span class="i">QUESTION</span>); <span class="k">break</span>;
+      <span class="k">case</span> <span class="s">&#39;:&#39;</span>: <span class="i">addToken</span>(<span class="i">COLON</span>); <span class="k">break</span>;
     }
   }
 </pre></div>
@@ -618,7 +621,7 @@ characters Lox doesn&rsquo;t use, like <code>@#^</code>, at our interpreter? Rig
 characters get silently discarded. They aren&rsquo;t used by the Lox language, but
 that doesn&rsquo;t mean the interpreter can pretend they aren&rsquo;t there. Instead, we
 report an error.</p>
-<div class="codehilite"><pre class="insert-before">      case '*': addToken(STAR); break;<span name="slash"> </span>
+<div class="codehilite"><pre class="insert-before">      case ':': addToken(COLON); break;
 </pre><div class="source-file"><em>lox/Scanner.java</em><br>
 in <em>scanToken</em>()</div>
 <pre class="insert">
@@ -655,7 +658,7 @@ That&rsquo;s why we need to scan <code>!=</code> as a single lexeme. Likewise, <
 can all be followed by <code>=</code> to create the other equality and comparison
 operators.</p>
 <p>For all of these, we need to look at the second character.</p>
-<div class="codehilite"><pre class="insert-before">      case '*': addToken(STAR); break;<span name="slash"> </span>
+<div class="codehilite"><pre class="insert-before">      case ':': addToken(COLON); break;
 </pre><div class="source-file"><em>lox/Scanner.java</em><br>
 in <em>scanToken</em>()</div>
 <pre class="insert">      <span class="k">case</span> <span class="s">&#39;!&#39;</span>:
@@ -702,44 +705,7 @@ little special handling because comments begin with a slash too.</p>
 </pre><div class="source-file"><em>lox/Scanner.java</em><br>
 in <em>scanToken</em>()</div>
 <pre class="insert">      <span class="k">case</span> <span class="s">&#39;/&#39;</span>:
-        <span class="c">// ### MY CODE ###</span>
-        <span class="k">if</span> (<span class="i">match</span>(<span class="s">&#39;*&#39;</span>)) {
-          <span class="t">int</span> <span class="i">nestingSpot</span> = <span class="n">1</span>;
-          <span class="c">// Traverse until &#39;*&#39; and &#39;/&#39; characters are reached</span>
-          <span class="k">while</span> (!<span class="i">isAtEnd</span>()) {
-            <span class="k">if</span> (<span class="i">peek</span>() == <span class="s">&#39;\n&#39;</span>){
-              <span class="i">line</span>++;
-              <span class="i">advance</span>();
-            }
-            <span class="c">// Handle new nesting</span>
-            <span class="k">else</span> <span class="k">if</span> (<span class="i">peek</span>() == <span class="s">&#39;/&#39;</span> &amp;&amp; <span class="i">peekNext</span>() == <span class="s">&#39;*&#39;</span>) {
-              <span class="i">nestingSpot</span>++;
-              <span class="c">// Advance for &#39;/&#39; and &#39;*&#39;</span>
-              <span class="i">advance</span>();
-              <span class="i">advance</span>();
-            }
-            <span class="c">// Terminate current nesting</span>
-            <span class="k">else</span> <span class="k">if</span> (<span class="i">peek</span>() == <span class="s">&#39;*&#39;</span> &amp;&amp; <span class="i">peekNext</span>() == <span class="s">&#39;/&#39;</span>) {
-              <span class="i">nestingSpot</span>--;
-              <span class="c">// Advance for &#39;*&#39; and &#39;/&#39;</span>
-              <span class="i">advance</span>();
-              <span class="i">advance</span>();
-              <span class="k">if</span> (<span class="i">nestingSpot</span> == <span class="n">0</span>) {
-                <span class="k">break</span>;
-              }
-            }
-            <span class="k">else</span> {
-              <span class="i">advance</span>();
-            }
-          }
-
-          <span class="c">// End of file was reached and we&#39;re still in the comment block</span>
-          <span class="k">if</span> (<span class="i">isAtEnd</span>() &amp;&amp; <span class="i">nestingSpot</span> &gt; <span class="n">0</span>) {
-            <span class="t">Lox</span>.<span class="i">error</span>(<span class="i">line</span>, <span class="s">&quot;Expected &#39;*/&#39;. Unterminated block comment&quot;</span>);
-          }
-        }
-         <span class="c">// ### END OF MY CODE ###</span>
-        <span class="k">else</span> <span class="k">if</span> (<span class="i">match</span>(<span class="s">&#39;/&#39;</span>)) {
+        <span class="k">if</span> (<span class="i">match</span>(<span class="s">&#39;/&#39;</span>)) {
           <span class="c">// A comment goes until the end of the line.</span>
           <span class="k">while</span> (<span class="i">peek</span>() != <span class="s">&#39;\n&#39;</span> &amp;&amp; !<span class="i">isAtEnd</span>()) <span class="i">advance</span>();
         } <span class="k">else</span> {

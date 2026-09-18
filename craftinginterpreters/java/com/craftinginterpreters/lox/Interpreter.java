@@ -268,7 +268,7 @@ class Interpreter implements Expr.Visitor<Object>,
     Object right = evaluate(expr.right); // [left]
 
     switch (expr.operator.type) {
-//> comma-operator, pick rightmost
+// comma, assign rightmost
       case COMMA: return right;
 //> binary-equality
       case BANG_EQUAL: return !isEqual(left, right);
@@ -332,13 +332,11 @@ class Interpreter implements Expr.Visitor<Object>,
       case SLASH:
 //> check-slash-operand
         checkNumberOperands(expr.operator, left, right);
-
         // ### MY CODE: Chapter 7 Challenge 3 ###
         if ((double)right == 0) {
           throw new RuntimeError(expr.operator, "Division by 0 not allowed.");
         }
         // ### END OF MY CODE ###
-        
 //< check-slash-operand
         return (double)left / (double)right;
       case STAR:
@@ -380,11 +378,11 @@ class Interpreter implements Expr.Visitor<Object>,
 //< check-arity
     return function.call(this, arguments);
   }
-  @Override
-  public Void visitTernaryExpr(Expr.Ternary expr) {
-    // Actual evaluation logic is out of scope for this chapter
-    return null;
-  }
+@Override
+public Void visitTernaryExpr(Expr.Ternary expr) {
+  // Actual evaluation logic is out of scope for this chapter
+  return null;
+}
 //< Functions visit-call
 //> Classes interpreter-visit-get
   @Override

@@ -483,14 +483,14 @@ along the tokens building up a chain of calls and gets as we find parentheses
 and dots, like so:</p><img src="image/classes/zip.png" alt="Parsing a series of '.' and '()' expressions to an AST." />
 <p>Instances of the new Expr.Get node feed into the resolver.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Resolver.java</em><br>
-add after <em>visitCallExpr</em>()</div>
+add after <em>visitTernaryExpr</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitGetExpr</span>(<span class="t">Expr</span>.<span class="t">Get</span> <span class="i">expr</span>) {
     <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">object</span>);
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>visitCallExpr</em>()</div>
+<div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>visitTernaryExpr</em>()</div>
 
 <p>OK, not much to that. Since properties are looked up <span
 name="dispatch">dynamically</span>, they don&rsquo;t get resolved. During resolution,
@@ -501,7 +501,7 @@ access happens in the interpreter.</p>
 process the property name during the static resolution pass.</p>
 </aside>
 <div class="codehilite"><div class="source-file"><em>lox/Interpreter.java</em><br>
-add after <em>visitCallExpr</em>()</div>
+add after <em>visitTernaryExpr</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Object</span> <span class="i">visitGetExpr</span>(<span class="t">Expr</span>.<span class="t">Get</span> <span class="i">expr</span>) {
     <span class="t">Object</span> <span class="i">object</span> = <span class="i">evaluate</span>(<span class="i">expr</span>.<span class="i">object</span>);
@@ -513,7 +513,7 @@ add after <em>visitCallExpr</em>()</div>
         <span class="s">&quot;Only instances have properties.&quot;</span>);
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>visitCallExpr</em>()</div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>visitTernaryExpr</em>()</div>
 
 <p>First, we evaluate the expression whose property is being accessed. In Lox, only
 instances of classes have properties. If the object is some other type like a

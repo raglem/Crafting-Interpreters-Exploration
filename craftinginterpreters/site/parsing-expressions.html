@@ -960,6 +960,31 @@ expression. We need to handle that error too.</p>
 in <em>primary</em>()</div>
 <pre class="insert">
 
+    <span class="c">// ### MY CODE: Chapter 6 Challenge 3 ###</span>
+    <span class="k">if</span> (<span class="i">match</span>(<span class="i">EQUAL</span>, <span class="i">BANG_EQUAL</span>)) {
+      <span class="i">error</span>(<span class="i">previous</span>(), <span class="s">&quot;Missing left-hand operand. &quot;</span>);
+      <span class="i">equality</span>();
+      <span class="k">return</span> <span class="k">null</span>;
+    }
+
+    <span class="k">if</span> (<span class="i">match</span>(<span class="i">GREATER</span>, <span class="i">GREATER_EQUAL</span>, <span class="i">LESS</span>, <span class="i">LESS_EQUAL</span>)) {
+      <span class="i">error</span>(<span class="i">previous</span>(), <span class="s">&quot;Missing left-hand operand. &quot;</span>);
+      <span class="i">comparison</span>();
+      <span class="k">return</span> <span class="k">null</span>;
+    }
+
+    <span class="k">if</span> (<span class="i">match</span>(<span class="i">SLASH</span>, <span class="i">STAR</span>)) {
+      <span class="i">error</span>(<span class="i">previous</span>(), <span class="s">&quot;Missing left-hand operand. &quot;</span>);
+      <span class="i">factor</span>();
+      <span class="k">return</span> <span class="k">null</span>;
+    }
+
+    <span class="k">if</span> (<span class="i">match</span>(<span class="i">PLUS</span>)){
+      <span class="i">error</span>(<span class="i">previous</span>(), <span class="s">&quot;Missing left-hand operand. &quot;</span>);
+      <span class="i">term</span>();
+      <span class="k">return</span> <span class="k">null</span>;
+    }
+
     <span class="k">throw</span> <span class="i">error</span>(<span class="i">peek</span>(), <span class="s">&quot;Expect expression.&quot;</span>);
 </pre><pre class="insert-after">  }
 </pre></div>
