@@ -390,7 +390,7 @@ create new file</div>
   <span class="i">IDENTIFIER</span>, <span class="i">STRING</span>, <span class="i">NUMBER</span>,
 
   <span class="c">// Keywords.</span>
-  <span class="i">AND</span>, <span class="i">CLASS</span>, <span class="i">ELSE</span>, <span class="i">FALSE</span>, <span class="i">FUN</span>, <span class="i">FOR</span>, <span class="i">IF</span>, <span class="i">NIL</span>, <span class="i">OR</span>,
+  <span class="i">AND</span>, <span class="i">BREAK</span>, <span class="i">CLASS</span>, <span class="i">ELSE</span>, <span class="i">FALSE</span>, <span class="i">FUN</span>, <span class="i">FOR</span>, <span class="i">IF</span>, <span class="i">NIL</span>, <span class="i">OR</span>,
   <span class="i">PRINT</span>, <span class="i">RETURN</span>, <span class="i">SUPER</span>, <span class="i">THIS</span>, <span class="i">TRUE</span>, <span class="i">VAR</span>, <span class="i">WHILE</span>,
 
   <span class="i">EOF</span>
@@ -1042,6 +1042,7 @@ in class <em>Scanner</em></div>
   <span class="k">static</span> {
     <span class="i">keywords</span> = <span class="k">new</span> <span class="t">HashMap</span>&lt;&gt;();
     <span class="i">keywords</span>.<span class="i">put</span>(<span class="s">&quot;and&quot;</span>,    <span class="i">AND</span>);
+    <span class="i">keywords</span>.<span class="i">put</span>(<span class="s">&quot;break&quot;</span>, <span class="i">BREAK</span>);
     <span class="i">keywords</span>.<span class="i">put</span>(<span class="s">&quot;class&quot;</span>,  <span class="i">CLASS</span>);
     <span class="i">keywords</span>.<span class="i">put</span>(<span class="s">&quot;else&quot;</span>,   <span class="i">ELSE</span>);
     <span class="i">keywords</span>.<span class="i">put</span>(<span class="s">&quot;false&quot;</span>,  <span class="i">FALSE</span>);

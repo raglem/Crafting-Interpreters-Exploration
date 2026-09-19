@@ -391,6 +391,7 @@ create new file</div>
 <span class="k">abstract</span> <span class="k">class</span> <span class="t">Stmt</span> {
   <span class="k">interface</span> <span class="t">Visitor</span>&lt;<span class="t">R</span>&gt; {
     <span class="t">R</span> <span class="i">visitBlockStmt</span>(<span class="t">Block</span> <span class="i">stmt</span>);
+    <span class="t">R</span> <span class="i">visitBreakStmt</span>(<span class="t">Break</span> <span class="i">stmt</span>);
     <span class="t">R</span> <span class="i">visitClassStmt</span>(<span class="t">Class</span> <span class="i">stmt</span>);
     <span class="t">R</span> <span class="i">visitExpressionStmt</span>(<span class="t">Expression</span> <span class="i">stmt</span>);
     <span class="t">R</span> <span class="i">visitFunctionStmt</span>(<span class="t">Function</span> <span class="i">stmt</span>);
@@ -428,7 +429,24 @@ nest inside class <em>Stmt</em></div>
 </pre></div>
 <div class="source-file-narrow"><em>lox/Stmt.java</em>, nest inside class <em>Stmt</em></div>
 
-<h3><a href="#class-statement" id="class-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;2</small>Class statement</a></h3>
+<h3><a href="#break-statement" id="break-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;2</small>Break statement</a></h3>
+<p>The <code>break</code> statement.</p>
+<div class="codehilite"><div class="source-file"><em>lox/Stmt.java</em><br>
+nest inside class <em>Stmt</em></div>
+<pre>  <span class="k">static</span> <span class="k">class</span> <span class="t">Break</span> <span class="k">extends</span> <span class="t">Stmt</span> {
+    <span class="t">Break</span>() {
+    }
+
+    <span class="a">@Override</span>
+    &lt;<span class="t">R</span>&gt; <span class="t">R</span> <span class="i">accept</span>(<span class="t">Visitor</span>&lt;<span class="t">R</span>&gt; <span class="i">visitor</span>) {
+      <span class="k">return</span> <span class="i">visitor</span>.<span class="i">visitBreakStmt</span>(<span class="k">this</span>);
+    }
+
+  }
+</pre></div>
+<div class="source-file-narrow"><em>lox/Stmt.java</em>, nest inside class <em>Stmt</em></div>
+
+<h3><a href="#class-statement" id="class-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;3</small>Class statement</a></h3>
 <p>Class declarations are introduced in, unsurprisingly,
 &ldquo;<a href="classes.html#class-declarations">Classes</a>&rdquo;.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Stmt.java</em><br>
@@ -454,7 +472,7 @@ nest inside class <em>Stmt</em></div>
 </pre></div>
 <div class="source-file-narrow"><em>lox/Stmt.java</em>, nest inside class <em>Stmt</em></div>
 
-<h3><a href="#expression-statement" id="expression-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;3</small>Expression statement</a></h3>
+<h3><a href="#expression-statement" id="expression-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;4</small>Expression statement</a></h3>
 <p>The expression statement is introduced in &ldquo;<a href="statements-and-state.html#statements">Statements and
 State</a>&rdquo;.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Stmt.java</em><br>
@@ -474,7 +492,7 @@ nest inside class <em>Stmt</em></div>
 </pre></div>
 <div class="source-file-narrow"><em>lox/Stmt.java</em>, nest inside class <em>Stmt</em></div>
 
-<h3><a href="#function-statement" id="function-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;4</small>Function statement</a></h3>
+<h3><a href="#function-statement" id="function-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;5</small>Function statement</a></h3>
 <p>Function declarations are introduced in, you guessed it,
 &ldquo;<a href="functions.html#function-declarations">Functions</a>&rdquo;.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Stmt.java</em><br>
@@ -498,7 +516,7 @@ nest inside class <em>Stmt</em></div>
 </pre></div>
 <div class="source-file-narrow"><em>lox/Stmt.java</em>, nest inside class <em>Stmt</em></div>
 
-<h3><a href="#if-statement" id="if-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;5</small>If statement</a></h3>
+<h3><a href="#if-statement" id="if-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;6</small>If statement</a></h3>
 <p>The <code>if</code> statement is introduced in &ldquo;<a href="control-flow.html#conditional-execution">Control
 Flow</a>&rdquo;.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Stmt.java</em><br>
@@ -522,7 +540,7 @@ nest inside class <em>Stmt</em></div>
 </pre></div>
 <div class="source-file-narrow"><em>lox/Stmt.java</em>, nest inside class <em>Stmt</em></div>
 
-<h3><a href="#print-statement" id="print-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;6</small>Print statement</a></h3>
+<h3><a href="#print-statement" id="print-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;7</small>Print statement</a></h3>
 <p>The <code>print</code> statement is introduced in &ldquo;<a href="statements-and-state.html#statements">Statements and
 State</a>&rdquo;.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Stmt.java</em><br>
@@ -542,7 +560,7 @@ nest inside class <em>Stmt</em></div>
 </pre></div>
 <div class="source-file-narrow"><em>lox/Stmt.java</em>, nest inside class <em>Stmt</em></div>
 
-<h3><a href="#return-statement" id="return-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;7</small>Return statement</a></h3>
+<h3><a href="#return-statement" id="return-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;8</small>Return statement</a></h3>
 <p>You need a function to return from, so <code>return</code> statements are introduced in
 &ldquo;<a href="functions.html#return-statements">Functions</a>&rdquo;.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Stmt.java</em><br>
@@ -564,7 +582,7 @@ nest inside class <em>Stmt</em></div>
 </pre></div>
 <div class="source-file-narrow"><em>lox/Stmt.java</em>, nest inside class <em>Stmt</em></div>
 
-<h3><a href="#variable-statement" id="variable-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;8</small>Variable statement</a></h3>
+<h3><a href="#variable-statement" id="variable-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;9</small>Variable statement</a></h3>
 <p>Variable declarations are introduced in &ldquo;<a href="statements-and-state.html#variable-syntax">Statements and
 State</a>&rdquo;.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Stmt.java</em><br>
@@ -586,7 +604,7 @@ nest inside class <em>Stmt</em></div>
 </pre></div>
 <div class="source-file-narrow"><em>lox/Stmt.java</em>, nest inside class <em>Stmt</em></div>
 
-<h3><a href="#ternary-expression" id="ternary-expression"><small>A2&#8202;.&#8202;2&#8202;.&#8202;9</small>Ternary expression</a></h3>
+<h3><a href="#ternary-expression" id="ternary-expression"><small>A2&#8202;.&#8202;2&#8202;.&#8202;10</small>Ternary expression</a></h3>
 <p>The conditional or ternary expression.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Expr.java</em><br>
 nest inside class <em>Expr</em></div>
@@ -609,7 +627,7 @@ nest inside class <em>Expr</em></div>
 </pre></div>
 <div class="source-file-narrow"><em>lox/Expr.java</em>, nest inside class <em>Expr</em></div>
 
-<h3><a href="#while-statement" id="while-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;10</small>While statement</a></h3>
+<h3><a href="#while-statement" id="while-statement"><small>A2&#8202;.&#8202;2&#8202;.&#8202;11</small>While statement</a></h3>
 <p>The <code>while</code> statement is introduced in &ldquo;<a href="control-flow.html#while-loops">Control
 Flow</a>&rdquo;.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Stmt.java</em><br>

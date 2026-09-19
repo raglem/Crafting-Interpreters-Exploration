@@ -516,11 +516,10 @@ scopes. It tracks the <em>current</em> environment. This new <code>globals</code
 fixed reference to the outermost global environment.</p>
 <p>When we instantiate an Interpreter, we stuff the native function in that global
 scope.</p>
-<div class="codehilite"><pre class="insert-before">
-
+<div class="codehilite"><pre class="insert-before">  private static class BreakException extends RuntimeException {}
 
 </pre><div class="source-file"><em>lox/Interpreter.java</em><br>
-in class <em>Interpreter</em></div>
+in class <em>BreakException</em></div>
 <pre class="insert">  <span class="t">Interpreter</span>() {
     <span class="i">globals</span>.<span class="i">define</span>(<span class="s">&quot;clock&quot;</span>, <span class="k">new</span> <span class="t">LoxCallable</span>() {
       <span class="a">@Override</span>
@@ -539,7 +538,7 @@ in class <em>Interpreter</em></div>
 
 </pre><pre class="insert-after">  void interpret(List&lt;Stmt&gt; statements) {
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, in class <em>Interpreter</em></div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, in class <em>BreakException</em></div>
 
 <p>This defines a <span name="lisp-1">variable</span> named &ldquo;clock&rdquo;. Its value is a
 Java anonymous class that implements LoxCallable. The <code>clock()</code> function takes
@@ -916,7 +915,7 @@ statements, first by recognizing the initial keyword.</p>
 </pre><div class="source-file"><em>lox/Parser.java</em><br>
 in <em>statement</em>()</div>
 <pre class="insert">    <span class="k">if</span> (<span class="i">match</span>(<span class="i">RETURN</span>)) <span class="k">return</span> <span class="i">returnStatement</span>();
-</pre><pre class="insert-after">    if (match(WHILE)) return whileStatement();
+</pre><pre class="insert-after">    if (match(BREAK)) return breakStatement();
 </pre></div>
 <div class="source-file-narrow"><em>lox/Parser.java</em>, in <em>statement</em>()</div>
 

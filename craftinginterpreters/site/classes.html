@@ -200,7 +200,7 @@ class declaration. Instances are loose bags of data and you can freely add
 fields to them as you see fit using normal imperative code.</p>
 <p>Over in our AST generator, the <code>classDecl</code> grammar rule gets its own statement
 <span name="class-ast">node</span>.</p>
-<div class="codehilite"><pre class="insert-before">      &quot;Block      : List&lt;Stmt&gt; statements&quot;,
+<div class="codehilite"><pre class="insert-before">      &quot;Break      : &quot;,
 </pre><div class="source-file"><em>tool/GenerateAst.java</em><br>
 in <em>main</em>()</div>
 <pre class="insert">      <span class="s">&quot;Class      : Token name, List&lt;Stmt.Function&gt; methods&quot;</span>,
@@ -259,7 +259,7 @@ class body.</p>
 Previously, we would jump straight into the interpreter, but now we need to
 plumb the node through the resolver first.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Resolver.java</em><br>
-add after <em>visitBlockStmt</em>()</div>
+add after <em>visitBreakStmt</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitClassStmt</span>(<span class="t">Stmt</span>.<span class="t">Class</span> <span class="i">stmt</span>) {
     <span class="i">declare</span>(<span class="i">stmt</span>.<span class="i">name</span>);
@@ -267,7 +267,7 @@ add after <em>visitBlockStmt</em>()</div>
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>visitBlockStmt</em>()</div>
+<div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>visitBreakStmt</em>()</div>
 
 <p>We aren&rsquo;t going to worry about resolving the methods themselves yet, so for now
 all we need to do is declare the class using its name. It&rsquo;s not common to
@@ -275,7 +275,7 @@ declare a class as a local variable, but Lox permits it, so we need to handle it
 correctly.</p>
 <p>Now we interpret the class declaration.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Interpreter.java</em><br>
-add after <em>visitBlockStmt</em>()</div>
+add after <em>visitBreakStmt</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitClassStmt</span>(<span class="t">Stmt</span>.<span class="t">Class</span> <span class="i">stmt</span>) {
     <span class="i">environment</span>.<span class="i">define</span>(<span class="i">stmt</span>.<span class="i">name</span>.<span class="i">lexeme</span>, <span class="k">null</span>);
@@ -284,7 +284,7 @@ add after <em>visitBlockStmt</em>()</div>
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>visitBlockStmt</em>()</div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>visitBreakStmt</em>()</div>
 
 <p>This looks similar to how we execute function declarations. We declare the
 class&rsquo;s name in the current environment. Then we turn the class <em>syntax node</em>

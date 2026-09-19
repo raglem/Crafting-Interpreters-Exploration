@@ -210,6 +210,14 @@ create new file</div>
 <span class="c">// the value for declared but uninitialized values</span>
   <span class="k">private</span> <span class="k">final</span> <span class="t">Object</span> <span class="i">UNINITIALIZED</span> = <span class="k">new</span> <span class="t">Object</span>();
 
+<span class="c">// used to throw an exception and end a loop when finding &#39;break&#39;</span>
+  <span class="k">private</span> <span class="k">static</span> <span class="k">class</span> <span class="t">BreakException</span> <span class="k">extends</span> <span class="t">RuntimeException</span> {}
+
+
+  <span class="a">@Override</span>
+  <span class="k">public</span> <span class="t">Void</span> <span class="i">visitBreakStmt</span>(<span class="t">Stmt</span>.<span class="t">Break</span> <span class="i">stmt</span>) {
+    <span class="k">throw</span> <span class="k">new</span> <span class="t">BreakException</span>();
+  }
 
 }
 </pre></div>
@@ -236,13 +244,13 @@ expressions, which are also leaf nodes.</p>
 in the parser, now we convert the literal tree node into a runtime value. That
 turns out to be trivial.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Interpreter.java</em><br>
-add after class <em>Interpreter</em></div>
+add after <em>visitBreakStmt</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Object</span> <span class="i">visitLiteralExpr</span>(<span class="t">Expr</span>.<span class="t">Literal</span> <span class="i">expr</span>) {
     <span class="k">return</span> <span class="i">expr</span>.<span class="i">value</span>;
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after class <em>Interpreter</em></div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>visitBreakStmt</em>()</div>
 
 <p>We eagerly produced the runtime value way back during scanning and stuffed it in
 the token. The parser took that value and stuck it in the literal tree node,
@@ -251,13 +259,13 @@ so to evaluate a literal, we simply pull it back out.</p>
 <p>The next simplest node to evaluate is grouping<span class="em">&mdash;</span>the node you get as a result
 of using explicit parentheses in an expression.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Interpreter.java</em><br>
-add after class <em>Interpreter</em></div>
+add after <em>visitBreakStmt</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Object</span> <span class="i">visitGroupingExpr</span>(<span class="t">Expr</span>.<span class="t">Grouping</span> <span class="i">expr</span>) {
     <span class="k">return</span> <span class="i">evaluate</span>(<span class="i">expr</span>.<span class="i">expression</span>);
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after class <em>Interpreter</em></div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>visitBreakStmt</em>()</div>
 
 <p>A <span name="grouping">grouping</span> node has a reference to an inner node
 for the expression contained inside the parentheses. To evaluate the grouping
@@ -271,12 +279,12 @@ We do create a node for parentheses in Lox because we&rsquo;ll need it later to
 correctly handle the left-hand sides of assignment expressions.</p>
 </aside>
 <div class="codehilite"><div class="source-file"><em>lox/Interpreter.java</em><br>
-in class <em>Interpreter</em></div>
+add after class <em>BreakException</em></div>
 <pre>  <span class="k">private</span> <span class="t">Object</span> <span class="i">evaluate</span>(<span class="t">Expr</span> <span class="i">expr</span>) {
     <span class="k">return</span> <span class="i">expr</span>.<span class="i">accept</span>(<span class="k">this</span>);
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, in class <em>Interpreter</em></div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after class <em>BreakException</em></div>
 
 <h3><a href="#evaluating-unary-expressions" id="evaluating-unary-expressions"><small>7&#8202;.&#8202;2&#8202;.&#8202;3</small>Evaluating unary expressions</a></h3>
 <p>Like grouping, unary expressions have a single subexpression that we must
@@ -364,7 +372,7 @@ add after <em>visitUnaryExpr</em>()</div>
 <p>On to the last expression tree class, binary operators. There&rsquo;s a handful of
 them, and we&rsquo;ll start with the arithmetic ones.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Interpreter.java</em><br>
-add after <em>evaluate</em>()</div>
+add after <em>visitBreakStmt</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Object</span> <span class="i">visitBinaryExpr</span>(<span class="t">Expr</span>.<span class="t">Binary</span> <span class="i">expr</span>) {
     <span class="t">Object</span> <span class="i">left</span> = <span class="i">evaluate</span>(<span class="i">expr</span>.<span class="i">left</span>);
@@ -385,7 +393,7 @@ add after <em>evaluate</em>()</div>
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>evaluate</em>()</div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>visitBreakStmt</em>()</div>
 
 <aside name="left">
 <p>Did you notice we pinned down a subtle corner of the language semantics here?
@@ -726,7 +734,7 @@ drives it.</p>
 work happens. We need to wrap a skin around them to interface with the rest of
 the program. The Interpreter&rsquo;s public API is simply one method.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Interpreter.java</em><br>
-in class <em>Interpreter</em></div>
+add after class <em>BreakException</em></div>
 <pre>  <span class="t">void</span> <span class="i">interpret</span>(<span class="t">Expr</span> <span class="i">expression</span>) {<span name="void"> </span>
     <span class="k">try</span> {
       <span class="t">Object</span> <span class="i">value</span> = <span class="i">evaluate</span>(<span class="i">expression</span>);
@@ -736,7 +744,7 @@ in class <em>Interpreter</em></div>
     }
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, in class <em>Interpreter</em></div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after class <em>BreakException</em></div>
 
 <p>This takes in a syntax tree for an expression and evaluates it. If that
 succeeds, <code>evaluate()</code> returns an object for the result value. <code>interpret()</code>

@@ -201,6 +201,7 @@ in <em>main</em>()</div>
 <pre class="insert">
 
     <span class="i">defineAst</span>(<span class="i">outputDir</span>, <span class="s">&quot;Stmt&quot;</span>, <span class="t">Arrays</span>.<span class="i">asList</span>(
+      <span class="s">&quot;Break      : &quot;</span>,
       <span class="s">&quot;Expression : Expr expression&quot;</span>,
       <span class="s">&quot;Print      : Expr expression&quot;</span>
     ));
@@ -271,6 +272,7 @@ this method:</p>
 add after <em>expression</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">Stmt</span> <span class="i">statement</span>() {
     <span class="k">if</span> (<span class="i">match</span>(<span class="i">PRINT</span>)) <span class="k">return</span> <span class="i">printStatement</span>();
+    <span class="k">if</span> (<span class="i">match</span>(<span class="i">BREAK</span>)) <span class="k">return</span> <span class="i">breakStatement</span>();
 
     <span class="k">return</span> <span class="i">expressionStatement</span>();
   }
@@ -300,7 +302,7 @@ do that here. We parse the subsequent expression, consume the terminating
 semicolon, and emit the syntax tree.</p>
 <p>If we didn&rsquo;t match a <code>print</code> statement, we must have one of these:</p>
 <div class="codehilite"><div class="source-file"><em>lox/Parser.java</em><br>
-add after <em>printStatement</em>()</div>
+add after <em>breakStatement</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">Stmt</span> <span class="i">expressionStatement</span>() {
     <span class="t">Expr</span> <span class="i">expr</span> = <span class="i">expression</span>();
 
@@ -315,7 +317,7 @@ add after <em>printStatement</em>()</div>
     <span class="k">return</span> <span class="k">new</span> <span class="t">Stmt</span>.<span class="t">Expression</span>(<span class="i">expr</span>);
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Parser.java</em>, add after <em>printStatement</em>()</div>
+<div class="source-file-narrow"><em>lox/Parser.java</em>, add after <em>breakStatement</em>()</div>
 
 <p>Similar to the previous method, we parse an expression followed by a semicolon.
 We wrap that Expr in a Stmt of the right type and return it.</p>
@@ -345,14 +347,14 @@ separate &ldquo;Void&rdquo; type specifically for this use. Sort of a &ldquo;box
 visit methods is Void, not Object. We have two statement types, and we need a
 visit method for each. The easiest is expression statements.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Interpreter.java</em><br>
-add after <em>evaluate</em>()</div>
+add after <em>visitBreakStmt</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitExpressionStmt</span>(<span class="t">Stmt</span>.<span class="t">Expression</span> <span class="i">stmt</span>) {
     <span class="i">evaluate</span>(<span class="i">stmt</span>.<span class="i">expression</span>);
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>evaluate</em>()</div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>visitBreakStmt</em>()</div>
 
 <p>We evaluate the inner expression using our existing <code>evaluate()</code> method and
 <span name="discard">discard</span> the value. Then we return <code>null</code>. Java
@@ -1374,7 +1376,7 @@ is allowed. The <span name="block-ast">syntax tree</span> node looks like this:<
 </pre><div class="source-file"><em>tool/GenerateAst.java</em><br>
 in <em>main</em>()</div>
 <pre class="insert">      <span class="s">&quot;Block      : List&lt;Stmt&gt; statements&quot;</span>,
-</pre><pre class="insert-after">      &quot;Expression : Expr expression&quot;,
+</pre><pre class="insert-after">      &quot;Break      : &quot;,
 </pre></div>
 <div class="source-file-narrow"><em>tool/GenerateAst.java</em>, in <em>main</em>()</div>
 
@@ -1388,7 +1390,7 @@ beginning of a block by its leading token<span class="em">&mdash;</span>in this 
 <aside name="generate">
 <p>As always, don&rsquo;t forget to run &ldquo;GenerateAst.java&rdquo;.</p>
 </aside>
-<div class="codehilite"><pre class="insert-before">    if (match(PRINT)) return printStatement();
+<div class="codehilite"><pre class="insert-before">    if (match(BREAK)) return breakStatement();
 </pre><div class="source-file"><em>lox/Parser.java</em><br>
 in <em>statement</em>()</div>
 <pre class="insert">    <span class="k">if</span> (<span class="i">match</span>(<span class="i">LEFT_BRACE</span>)) <span class="k">return</span> <span class="k">new</span> <span class="t">Stmt</span>.<span class="t">Block</span>(<span class="i">block</span>());
