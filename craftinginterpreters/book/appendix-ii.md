@@ -109,6 +109,12 @@ The curly-braced block statement that defines a local scope is introduced in
 
 ^code stmt-block
 
+### Break statement
+
+The `break` statement.
+
+^code stmt-break
+
 ### Class statement
 
 Class declarations are introduced in, unsurprisingly,

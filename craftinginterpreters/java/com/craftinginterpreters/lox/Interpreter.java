@@ -38,6 +38,8 @@ class Interpreter implements Expr.Visitor<Object>,
 // the value for declared but uninitialized values
   private final Object UNINITIALIZED = new Object();
 
+// used to throw an exception and end a loop when finding 'break'
+  private static class BreakException extends RuntimeException {}
 
 //> Functions interpreter-constructor
   Interpreter() {
@@ -128,6 +130,12 @@ class Interpreter implements Expr.Visitor<Object>,
     return null;
   }
 //< Statements and State visit-block
+
+  @Override 
+  public Void visitBreakStmt(Stmt.Break stmt) {
+    throw new BreakException();
+  }
+
 //> Classes interpreter-visit-class
   @Override
   public Void visitClassStmt(Stmt.Class stmt) {
@@ -253,8 +261,12 @@ class Interpreter implements Expr.Visitor<Object>,
 //> Control Flow visit-while
   @Override
   public Void visitWhileStmt(Stmt.While stmt) {
-    while (isTruthy(evaluate(stmt.condition))) {
-      execute(stmt.body);
+    try {
+      while (isTruthy(evaluate(stmt.condition))) {
+        execute(stmt.body);
+      }
+    } catch (BreakException e) {
+      // do nothing
     }
     return null;
   }
