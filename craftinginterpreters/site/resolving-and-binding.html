@@ -413,6 +413,18 @@ create new file</div>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitBreakStmt</span>(<span class="t">Stmt</span>.<span class="t">Break</span> <span class="i">stmt</span>) {
     <span class="k">return</span> <span class="k">null</span>;
   }
+<span class="a">@Override</span>
+  <span class="k">public</span> <span class="t">Void</span> <span class="i">visitFunctionExpr</span>(<span class="t">Expr</span>.<span class="t">Function</span> <span class="i">expr</span>) {
+    <span class="i">resolveFunction</span>(<span class="i">expr</span>, <span class="t">FunctionType</span>.<span class="i">FUNCTION</span>);
+    <span class="k">return</span> <span class="k">null</span>;
+  }
+<span class="a">@Override</span>
+  <span class="k">public</span> <span class="t">Void</span> <span class="i">visitTernaryExpr</span>(<span class="t">Expr</span>.<span class="t">Ternary</span> <span class="i">expr</span>) {
+    <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">condition</span>);
+    <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">thenExpr</span>);
+    <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">elseExpr</span>);
+    <span class="k">return</span> <span class="k">null</span>;
+  }
 }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Resolver.java</em>, create new file</div>
@@ -469,12 +481,12 @@ add after <em>Resolver</em>()</div>
 
 <p>This walks a list of statements and resolves each one. It in turn calls:</p>
 <div class="codehilite"><div class="source-file"><em>lox/Resolver.java</em><br>
-add after <em>visitBreakStmt</em>()</div>
+add after <em>visitTernaryExpr</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">void</span> <span class="i">resolve</span>(<span class="t">Stmt</span> <span class="i">stmt</span>) {
     <span class="i">stmt</span>.<span class="i">accept</span>(<span class="k">this</span>);
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>visitBreakStmt</em>()</div>
+<div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>visitTernaryExpr</em>()</div>
 
 <p>While we&rsquo;re at it, let&rsquo;s add another overload that we&rsquo;ll need later for
 resolving an expression.</p>
@@ -629,7 +641,7 @@ initialized and available for use. It&rsquo;s alive! </p>
 <p>Variable declarations<span class="em">&mdash;</span>and function declarations, which we&rsquo;ll get to<span class="em">&mdash;</span>write
 to the scope maps. Those maps are read when we resolve variable expressions.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Resolver.java</em><br>
-add after <em>visitVarStmt</em>()</div>
+add after <em>visitTernaryExpr</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitVariableExpr</span>(<span class="t">Expr</span>.<span class="t">Variable</span> <span class="i">expr</span>) {
     <span class="k">if</span> (!<span class="i">scopes</span>.<span class="i">isEmpty</span>() &amp;&amp;
@@ -642,7 +654,7 @@ add after <em>visitVarStmt</em>()</div>
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>visitVarStmt</em>()</div>
+<div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>visitTernaryExpr</em>()</div>
 
 <p>First, we check to see if the variable is being accessed inside its own
 initializer. This is where the values in the scope map come into play. If the
@@ -716,7 +728,7 @@ itself inside its own body.</p>
 add after <em>resolve</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">void</span> <span class="i">resolveFunction</span>(<span class="t">Stmt</span>.<span class="t">Function</span> <span class="i">function</span>) {
     <span class="i">beginScope</span>();
-    <span class="k">for</span> (<span class="t">Token</span> <span class="i">param</span> : <span class="i">function</span>.<span class="i">params</span>) {
+    <span class="k">for</span> (<span class="t">Token</span> <span class="i">param</span> : <span class="i">function</span>.<span class="i">parameters</span>) {
       <span class="i">declare</span>(<span class="i">param</span>);
       <span class="i">define</span>(<span class="i">param</span>);
     }
@@ -840,13 +852,6 @@ add after <em>visitBinaryExpr</em>()</div>
       <span class="i">resolve</span>(<span class="i">argument</span>);
     }
 
-    <span class="k">return</span> <span class="k">null</span>;
-  }
-  <span class="a">@Override</span>
-  <span class="k">public</span> <span class="t">Void</span> <span class="i">visitTernaryExpr</span>(<span class="t">Expr</span>.<span class="t">Ternary</span> <span class="i">expr</span>) {
-    <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">condition</span>);
-    <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">thenExpr</span>);
-    <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">elseExpr</span>);
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
@@ -1174,7 +1179,7 @@ that in.</p>
 </pre><div class="source-file"><em>lox/Resolver.java</em><br>
 in <em>visitFunctionStmt</em>()<br>
 replace 1 line</div>
-<pre class="insert">    <span class="i">resolveFunction</span>(<span class="i">stmt</span>, <span class="t">FunctionType</span>.<span class="i">FUNCTION</span>);
+<pre class="insert">    <span class="i">resolveFunction</span>(<span class="i">stmt</span>.<span class="i">function</span>, <span class="t">FunctionType</span>.<span class="i">FUNCTION</span>);
 </pre><pre class="insert-after">    return null;
 </pre></div>
 <div class="source-file-narrow"><em>lox/Resolver.java</em>, in <em>visitFunctionStmt</em>(), replace 1 line</div>
@@ -1184,8 +1189,8 @@ before resolving the body.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Resolver.java</em><br>
 method <em>resolveFunction</em>()<br>
 replace 1 line</div>
-<pre class="insert">  <span class="k">private</span> <span class="t">void</span> <span class="i">resolveFunction</span>(
-      <span class="t">Stmt</span>.<span class="t">Function</span> <span class="i">function</span>, <span class="t">FunctionType</span> <span class="i">type</span>) {
+<pre class="insert">    <span class="k">private</span> <span class="t">void</span> <span class="i">resolveFunction</span>(
+      <span class="t">Expr</span>.<span class="t">Function</span> <span class="i">function</span>, <span class="t">FunctionType</span> <span class="i">type</span>) {
     <span class="t">FunctionType</span> <span class="i">enclosingFunction</span> = <span class="i">currentFunction</span>;
     <span class="i">currentFunction</span> = <span class="i">type</span>;
 

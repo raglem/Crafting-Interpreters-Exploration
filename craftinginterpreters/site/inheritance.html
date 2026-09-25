@@ -440,8 +440,9 @@ in <em>main</em>()</div>
 </aside>
 <p>Following the grammar, the new parsing code goes inside our existing <code>primary()</code>
 method.</p>
-<div class="codehilite"><pre class="insert-before">      return new Expr.Literal(previous().literal);
-    }
+<div class="codehilite"><pre class="insert-before">
+
+    if (match(FUN)) return functionBody(&quot;function&quot;);
 </pre><div class="source-file"><em>lox/Parser.java</em><br>
 in <em>primary</em>()</div>
 <pre class="insert">

@@ -452,6 +452,13 @@ create new file</div>
     <span class="k">return</span> <span class="k">new</span> <span class="t">Stmt</span>.<span class="t">Break</span>();
   }
 
+<span class="c">//&gt; check next</span>
+  <span class="k">private</span> <span class="t">boolean</span> <span class="i">checkNext</span>(<span class="t">TokenType</span> <span class="i">type</span>) {
+    <span class="k">if</span> (<span class="i">isAtEnd</span>())  <span class="k">return</span> <span class="k">false</span>;
+    <span class="k">if</span> (<span class="i">tokens</span>.<span class="i">get</span>(<span class="i">current</span> + <span class="n">1</span>).<span class="i">type</span> == <span class="i">EOF</span>)  <span class="k">return</span> <span class="k">false</span>;
+    <span class="k">return</span> <span class="i">tokens</span>.<span class="i">get</span>(<span class="i">current</span> + <span class="n">1</span>).<span class="i">type</span> == <span class="i">type</span>;
+  }
+<span class="c">//&lt; check next</span>
 }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Parser.java</em>, create new file</div>
@@ -540,13 +547,13 @@ add after <em>match</em>()</div>
 <p>The <code>advance()</code> method consumes the current token and returns it, similar to how
 our scanner&rsquo;s corresponding method crawled through characters.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Parser.java</em><br>
-add after <em>check</em>()</div>
+add after <em>checkNext</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">Token</span> <span class="i">advance</span>() {
     <span class="k">if</span> (!<span class="i">isAtEnd</span>()) <span class="i">current</span>++;
     <span class="k">return</span> <span class="i">previous</span>();
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Parser.java</em>, add after <em>check</em>()</div>
+<div class="source-file-narrow"><em>lox/Parser.java</em>, add after <em>checkNext</em>()</div>
 
 <p>These methods bottom out on the last handful of primitive operations.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Parser.java</em><br>
@@ -700,6 +707,8 @@ add after <em>unary</em>()</div>
     <span class="k">if</span> (<span class="i">match</span>(<span class="i">NUMBER</span>, <span class="i">STRING</span>)) {
       <span class="k">return</span> <span class="k">new</span> <span class="t">Expr</span>.<span class="t">Literal</span>(<span class="i">previous</span>().<span class="i">literal</span>);
     }
+
+    <span class="k">if</span> (<span class="i">match</span>(<span class="i">FUN</span>)) <span class="k">return</span> <span class="i">functionBody</span>(<span class="s">&quot;function&quot;</span>);
 
     <span class="k">if</span> (<span class="i">match</span>(<span class="i">LEFT_PAREN</span>)) {
       <span class="t">Expr</span> <span class="i">expr</span> = <span class="i">expression</span>();
