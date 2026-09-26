@@ -206,6 +206,7 @@ create new file</div>
 <pre><span class="k">package</span> <span class="i">com.craftinginterpreters.lox</span>;
 
 <span class="k">class</span> <span class="t">Interpreter</span> <span class="k">implements</span> <span class="t">Expr</span>.<span class="t">Visitor</span>&lt;<span class="t">Object</span>&gt; {
+  <span class="k">private</span> <span class="k">final</span> <span class="t">Map</span>&lt;<span class="t">Expr</span>, <span class="t">Integer</span>&gt; <span class="i">slots</span> = <span class="k">new</span> <span class="t">HashMap</span>&lt;&gt;();
 
 <span class="c">// the value for declared but uninitialized values</span>
   <span class="k">private</span> <span class="k">final</span> <span class="t">Object</span> <span class="i">UNINITIALIZED</span> = <span class="k">new</span> <span class="t">Object</span>();
@@ -224,6 +225,13 @@ create new file</div>
 <span class="k">public</span> <span class="t">Object</span> <span class="i">visitFunctionExpr</span>(<span class="t">Expr</span>.<span class="t">Function</span> <span class="i">expr</span>) {
   <span class="k">return</span> <span class="k">new</span> <span class="t">LoxFunction</span>(<span class="k">null</span>, <span class="i">expr</span>, <span class="i">environment</span>, <span class="k">false</span>);
 }
+  <span class="k">private</span> <span class="t">void</span> <span class="i">define</span>(<span class="t">Token</span> <span class="i">name</span>, <span class="t">Object</span> <span class="i">value</span>) {
+    <span class="k">if</span> (<span class="i">environment</span> != <span class="k">null</span>) {
+      <span class="i">environment</span>.<span class="i">define</span>(<span class="i">name</span>.<span class="i">lexeme</span>, <span class="i">value</span>);
+    } <span class="k">else</span> {
+      <span class="i">globals</span>.<span class="i">put</span>(<span class="i">name</span>.<span class="i">lexeme</span>, <span class="i">value</span>);
+    }
+  }
 }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, create new file</div>

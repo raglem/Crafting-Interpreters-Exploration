@@ -280,7 +280,8 @@ add after <em>visitBreakStmt</em>()</div>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitClassStmt</span>(<span class="t">Stmt</span>.<span class="t">Class</span> <span class="i">stmt</span>) {
     <span class="i">environment</span>.<span class="i">define</span>(<span class="i">stmt</span>.<span class="i">name</span>.<span class="i">lexeme</span>, <span class="k">null</span>);
     <span class="t">LoxClass</span> <span class="i">klass</span> = <span class="k">new</span> <span class="t">LoxClass</span>(<span class="i">stmt</span>.<span class="i">name</span>.<span class="i">lexeme</span>);
-    <span class="i">environment</span>.<span class="i">assign</span>(<span class="i">stmt</span>.<span class="i">name</span>, <span class="i">klass</span>);
+<span class="c">// IDK what to do with this. I&#39;ll ignore class definitions in my implementation of the index-based variables</span>
+    <span class="c">// environment.assign(stmt.name, klass);</span>
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
@@ -855,7 +856,7 @@ replace 1 line</div>
     }
 
     <span class="t">LoxClass</span> <span class="i">klass</span> = <span class="k">new</span> <span class="t">LoxClass</span>(<span class="i">stmt</span>.<span class="i">name</span>.<span class="i">lexeme</span>, <span class="i">methods</span>);
-</pre><pre class="insert-after">    environment.assign(stmt.name, klass);
+</pre><pre class="insert-after">// IDK what to do with this. I'll ignore class definitions in my implementation of the index-based variables
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, in <em>visitClassStmt</em>(), replace 1 line</div>
 
@@ -1073,7 +1074,7 @@ the &ldquo;variable&rdquo;. Of course, that&rsquo;s not going to work right now,
 </pre><div class="source-file"><em>lox/Resolver.java</em><br>
 in <em>visitClassStmt</em>()</div>
 <pre class="insert">    <span class="i">beginScope</span>();
-    <span class="i">scopes</span>.<span class="i">peek</span>().<span class="i">put</span>(<span class="s">&quot;this&quot;</span>, <span class="k">new</span> <span class="t">Variable</span>(<span class="k">null</span>, <span class="k">null</span>));
+    <span class="i">scopes</span>.<span class="i">peek</span>().<span class="i">put</span>(<span class="s">&quot;this&quot;</span>, <span class="k">new</span> <span class="t">Variable</span>(<span class="k">null</span>, -<span class="n">1</span>, <span class="k">null</span>));
 
 </pre><pre class="insert-after">    for (Stmt.Function method : stmt.methods) {
 </pre></div>
@@ -1332,17 +1333,7 @@ are only so many hours in the day, and if a cut corner here or there lets you ge
 more features to users in less time, it may very well be a net win for their
 happiness and productivity. The trick is figuring out <em>which</em> corners to cut
 that won&rsquo;t cause your users and future self to curse your shortsightedness.</p>
-</aside>
-<div class="codehilite"><pre class="insert-before">      return returnValue.value;
-    }
-</pre><div class="source-file"><em>lox/LoxFunction.java</em><br>
-in <em>call</em>()</div>
-<pre class="insert">
-
-    <span class="k">if</span> (<span class="i">isInitializer</span>) <span class="k">return</span> <span class="i">closure</span>.<span class="i">getAt</span>(<span class="n">0</span>, <span class="s">&quot;this&quot;</span>);
-</pre><pre class="insert-after">    return null;
-</pre></div>
-<div class="source-file-narrow"><em>lox/LoxFunction.java</em>, in <em>call</em>()</div>
+</aside><strong>ERROR: Missing snippet return-this</strong>
 
 <p>If the function is an initializer, we override the actual return value and
 forcibly return <code>this</code>. That relies on a new <code>isInitializer</code> field.</p>
@@ -1371,7 +1362,7 @@ in <em>visitFunctionStmt</em>()<br>
 replace 1 line</div>
 <pre class="insert">    <span class="t">LoxFunction</span> <span class="i">function</span> = <span class="k">new</span> <span class="t">LoxFunction</span>(<span class="i">stmt</span>.<span class="i">name</span>.<span class="i">lexeme</span>, <span class="i">stmt</span>.<span class="i">function</span>, <span class="i">environment</span>,
                                            <span class="k">false</span>);
-</pre><pre class="insert-after">    environment.define(stmt.name.lexeme, function);
+</pre><pre class="insert-after">    define(stmt.name, function);
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, in <em>visitFunctionStmt</em>(), replace 1 line</div>
 
@@ -1456,15 +1447,7 @@ initializer, but you can still use an empty early <code>return</code>.</p>
 </pre></div>
 <p>That is actually kind of useful sometimes, so we don&rsquo;t want to disallow it
 entirely. Instead, it should return <code>this</code> instead of <code>nil</code>. That&rsquo;s an easy fix
-over in LoxFunction.</p>
-<div class="codehilite"><pre class="insert-before">    } catch (Return returnValue) {
-</pre><div class="source-file"><em>lox/LoxFunction.java</em><br>
-in <em>call</em>()</div>
-<pre class="insert">      <span class="k">if</span> (<span class="i">isInitializer</span>) <span class="k">return</span> <span class="i">closure</span>.<span class="i">getAt</span>(<span class="n">0</span>, <span class="s">&quot;this&quot;</span>);
-
-</pre><pre class="insert-after">      return returnValue.value;
-</pre></div>
-<div class="source-file-narrow"><em>lox/LoxFunction.java</em>, in <em>call</em>()</div>
+over in LoxFunction.</p><strong>ERROR: Missing snippet early-return-this</strong>
 
 <p>If we&rsquo;re in an initializer and execute a <code>return</code> statement, instead of
 returning the value (which will always be <code>nil</code>), we again return <code>this</code>.</p>

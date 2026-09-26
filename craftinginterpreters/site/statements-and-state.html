@@ -332,8 +332,7 @@ implement since statements have their own base class.</p>
 replace 1 line</div>
 <pre class="insert"><span class="k">class</span> <span class="t">Interpreter</span> <span class="k">implements</span> <span class="t">Expr</span>.<span class="t">Visitor</span>&lt;<span class="t">Object</span>&gt;,
                              <span class="t">Stmt</span>.<span class="t">Visitor</span>&lt;<span class="t">Void</span>&gt; {
-</pre><pre class="insert-after">
-
+</pre><pre class="insert-after">  private final Map&lt;Expr, Integer&gt; slots = new HashMap&lt;&gt;();
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, replace 1 line</div>
 
@@ -715,11 +714,12 @@ known as <strong>scatter tables</strong>.</p>
 create new file</div>
 <pre><span class="k">package</span> <span class="i">com.craftinginterpreters.lox</span>;
 
-<span class="k">import</span> <span class="i">java.util.HashMap</span>;
-<span class="k">import</span> <span class="i">java.util.Map</span>;
+<span class="k">import</span> <span class="i">java.util.ArrayList</span>;
+<span class="k">import</span> <span class="i">java.util.List</span>;
 
 <span class="k">class</span> <span class="t">Environment</span> {
-  <span class="k">private</span> <span class="k">final</span> <span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">Object</span>&gt; <span class="i">values</span> = <span class="k">new</span> <span class="t">HashMap</span>&lt;&gt;();
+  <span class="k">private</span> <span class="k">final</span> <span class="t">List</span>&lt;<span class="t">Object</span>&gt; <span class="i">values</span> = <span class="k">new</span> <span class="t">ArrayList</span>&lt;<span class="t">Object</span>&gt;();
+
 }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Environment.java</em>, create new file</div>
@@ -734,7 +734,7 @@ a new name to a value.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Environment.java</em><br>
 in class <em>Environment</em></div>
 <pre>  <span class="t">void</span> <span class="i">define</span>(<span class="t">String</span> <span class="i">name</span>, <span class="t">Object</span> <span class="i">value</span>) {
-    <span class="i">values</span>.<span class="i">put</span>(<span class="i">name</span>, <span class="i">value</span>);
+    <span class="i">values</span>.<span class="i">add</span>(<span class="i">value</span>);
   }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Environment.java</em>, in class <em>Environment</em></div>
@@ -766,25 +766,7 @@ footsteps.</p>
 <p>Scheme allows redefining variables at the top level.</p>
 </aside>
 <p>So, to keep the two modes consistent, we&rsquo;ll allow it<span class="em">&mdash;</span>at least for global
-variables. Once a variable exists, we need a way to look it up.</p>
-<div class="codehilite"><pre class="insert-before">class Environment {
-  private final Map&lt;String, Object&gt; values = new HashMap&lt;&gt;();
-</pre><div class="source-file"><em>lox/Environment.java</em><br>
-in class <em>Environment</em></div>
-<pre class="insert">
-
-  <span class="t">Object</span> <span class="i">get</span>(<span class="t">Token</span> <span class="i">name</span>) {
-    <span class="k">if</span> (<span class="i">values</span>.<span class="i">containsKey</span>(<span class="i">name</span>.<span class="i">lexeme</span>)) {
-      <span class="k">return</span> <span class="i">values</span>.<span class="i">get</span>(<span class="i">name</span>.<span class="i">lexeme</span>);
-    }
-
-    <span class="k">throw</span> <span class="k">new</span> <span class="t">RuntimeError</span>(<span class="i">name</span>,
-        <span class="s">&quot;Undefined variable &#39;&quot;</span> + <span class="i">name</span>.<span class="i">lexeme</span> + <span class="s">&quot;&#39;.&quot;</span>);
-  }
-
-</pre><pre class="insert-after">  void define(String name, Object value) {
-</pre></div>
-<div class="source-file-narrow"><em>lox/Environment.java</em>, in class <em>Environment</em></div>
+variables. Once a variable exists, we need a way to look it up.</p><strong>ERROR: Missing snippet environment-get</strong>
 
 <p>This is a little more semantically interesting. If the variable is found, it
 simply returns the value bound to it. But what if it&rsquo;s not? Again, we have a
@@ -881,7 +863,7 @@ add after <em>visitPrintStmt</em>()</div>
       <span class="i">value</span> = <span class="i">evaluate</span>(<span class="i">stmt</span>.<span class="i">initializer</span>);
     }
 
-    <span class="i">environment</span>.<span class="i">define</span>(<span class="i">stmt</span>.<span class="i">name</span>.<span class="i">lexeme</span>, <span class="i">value</span>);
+    <span class="i">define</span>(<span class="i">stmt</span>.<span class="i">name</span>, <span class="i">value</span>);
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
@@ -908,10 +890,6 @@ add after <em>visitUnaryExpr</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Object</span> <span class="i">visitVariableExpr</span>(<span class="t">Expr</span>.<span class="t">Variable</span> <span class="i">expr</span>) {
     <span class="k">return</span> <span class="i">environment</span>.<span class="i">get</span>(<span class="i">expr</span>.<span class="i">name</span>);
-<span class="c">// Throw error if variable is equal to UNINITIALIZED object</span>
-    <span class="k">if</span> (<span class="i">lookUpVariable</span>(<span class="i">expr</span>.<span class="i">name</span>, <span class="i">expr</span>).<span class="i">equals</span>(<span class="i">UNINITIALIZED</span>)) {
-      <span class="k">throw</span> <span class="k">new</span> <span class="t">RuntimeError</span>(<span class="i">expr</span>.<span class="i">name</span>, <span class="s">&quot;Variable not initialized&quot;</span>);
-    }
   }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>visitUnaryExpr</em>()</div>
@@ -1112,20 +1090,7 @@ add after <em>visitVarStmt</em>()</div>
 
 <p>For obvious reasons, it&rsquo;s similar to variable declaration. It evaluates the
 right-hand side to get the value, then stores it in the named variable. Instead
-of using <code>define()</code> on Environment, it calls this new method:</p>
-<div class="codehilite"><div class="source-file"><em>lox/Environment.java</em><br>
-add after <em>get</em>()</div>
-<pre>  <span class="t">void</span> <span class="i">assign</span>(<span class="t">Token</span> <span class="i">name</span>, <span class="t">Object</span> <span class="i">value</span>) {
-    <span class="k">if</span> (<span class="i">values</span>.<span class="i">containsKey</span>(<span class="i">name</span>.<span class="i">lexeme</span>)) {
-      <span class="i">values</span>.<span class="i">put</span>(<span class="i">name</span>.<span class="i">lexeme</span>, <span class="i">value</span>);
-      <span class="k">return</span>;
-    }
-
-    <span class="k">throw</span> <span class="k">new</span> <span class="t">RuntimeError</span>(<span class="i">name</span>,
-        <span class="s">&quot;Undefined variable &#39;&quot;</span> + <span class="i">name</span>.<span class="i">lexeme</span> + <span class="s">&quot;&#39;.&quot;</span>);
-  }
-</pre></div>
-<div class="source-file-narrow"><em>lox/Environment.java</em>, add after <em>get</em>()</div>
+of using <code>define()</code> on Environment, it calls this new method:</p><strong>ERROR: Missing snippet environment-assign</strong>
 
 <p>The key difference between assignment and definition is that assignment is not
 <span name="new">allowed</span> to create a <em>new</em> variable. In terms of our
@@ -1296,7 +1261,7 @@ its enclosing one.</p>
 </pre><div class="source-file"><em>lox/Environment.java</em><br>
 in class <em>Environment</em></div>
 <pre class="insert">  <span class="k">final</span> <span class="t">Environment</span> <span class="i">enclosing</span>;
-</pre><pre class="insert-after">  private final Map&lt;String, Object&gt; values = new HashMap&lt;&gt;();
+</pre><pre class="insert-after">  private final List&lt;Object&gt; values = new ArrayList&lt;Object&gt;();
 </pre></div>
 <div class="source-file-narrow"><em>lox/Environment.java</em>, in class <em>Environment</em></div>
 
@@ -1319,20 +1284,7 @@ given outer one.</p>
 <p>We don&rsquo;t have to touch the <code>define()</code> method<span class="em">&mdash;</span>a new variable is always
 declared in the current innermost scope. But variable lookup and assignment work
 with existing variables and they need to walk the chain to find them. First,
-lookup:</p>
-<div class="codehilite"><pre class="insert-before">      return values.get(name.lexeme);
-    }
-</pre><div class="source-file"><em>lox/Environment.java</em><br>
-in <em>get</em>()</div>
-<pre class="insert">
-
-    <span class="k">if</span> (<span class="i">enclosing</span> != <span class="k">null</span>) <span class="k">return</span> <span class="i">enclosing</span>.<span class="i">get</span>(<span class="i">name</span>);
-</pre><pre class="insert-after">
-
-    throw new RuntimeError(name,
-        &quot;Undefined variable '&quot; + name.lexeme + &quot;'.&quot;);
-</pre></div>
-<div class="source-file-narrow"><em>lox/Environment.java</em>, in <em>get</em>()</div>
+lookup:</p><strong>ERROR: Missing snippet environment-get-enclosing</strong>
 
 <p>If the variable isn&rsquo;t found in this environment, we simply try the enclosing
 one. That in turn does the same thing <span name="recurse">recursively</span>,
@@ -1343,21 +1295,7 @@ an error as before.</p>
 <aside name="recurse">
 <p>It&rsquo;s likely faster to iteratively walk the chain, but I think the recursive
 solution is prettier. We&rsquo;ll do something <em>much</em> faster in clox.</p>
-</aside>
-<div class="codehilite"><pre class="insert-before">      values.put(name.lexeme, value);
-      return;
-    }
-
-</pre><div class="source-file"><em>lox/Environment.java</em><br>
-in <em>assign</em>()</div>
-<pre class="insert">    <span class="k">if</span> (<span class="i">enclosing</span> != <span class="k">null</span>) {
-      <span class="i">enclosing</span>.<span class="i">assign</span>(<span class="i">name</span>, <span class="i">value</span>);
-      <span class="k">return</span>;
-    }
-
-</pre><pre class="insert-after">    throw new RuntimeError(name,
-</pre></div>
-<div class="source-file-narrow"><em>lox/Environment.java</em>, in <em>assign</em>()</div>
+</aside><strong>ERROR: Missing snippet environment-assign-enclosing</strong>
 
 <p>Again, if the variable isn&rsquo;t in this environment, it checks the outer one,
 recursively.</p>

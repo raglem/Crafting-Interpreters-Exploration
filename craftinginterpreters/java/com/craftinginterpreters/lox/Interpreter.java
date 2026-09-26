@@ -25,12 +25,13 @@ class Interpreter implements Expr.Visitor<Object>,
   private Environment environment = new Environment();
 */
 //> Functions global-environment
-  final Environment globals = new Environment();
-  private Environment environment = globals;
+  final Map<String, Object> globals = new HashMap<>();
+  private Environment environment;
 //< Functions global-environment
 //> Resolving and Binding locals-field
   private final Map<Expr, Integer> locals = new HashMap<>();
 //< Resolving and Binding locals-field
+  private final Map<Expr, Integer> slots = new HashMap<>();
 //> Statements and State environment-field
 
 //< Statements and State environment-field
@@ -43,7 +44,7 @@ class Interpreter implements Expr.Visitor<Object>,
 
 //> Functions interpreter-constructor
   Interpreter() {
-    globals.define("clock", new LoxCallable() {
+    globals.put("clock", new LoxCallable() {
       @Override
       public int arity() { return 0; }
 
@@ -104,8 +105,9 @@ class Interpreter implements Expr.Visitor<Object>,
   }
 //< Statements and State execute
 //> Resolving and Binding resolve
-  void resolve(Expr expr, int depth) {
+  void resolve(Expr expr, int depth, int slot) {
     locals.put(expr, depth);
+    slots.put(expr, slot);
   }
 //< Resolving and Binding resolve
 //> Statements and State execute-block
@@ -190,7 +192,8 @@ class Interpreter implements Expr.Visitor<Object>,
 /* Classes interpreter-visit-class < Classes interpret-methods
     LoxClass klass = new LoxClass(stmt.name.lexeme);
 */
-    environment.assign(stmt.name, klass);
+// IDK what to do with this. I'll ignore class definitions in my implementation of the index-based variables
+    // environment.assign(stmt.name, klass);
     return null;
   }
 //< Classes interpreter-visit-class
@@ -214,7 +217,7 @@ class Interpreter implements Expr.Visitor<Object>,
     LoxFunction function = new LoxFunction(stmt.name.lexeme, stmt.function, environment,
                                            false);
 //< Classes construct-function
-    environment.define(stmt.name.lexeme, function);
+    define(stmt.name, function);
     return null;
   }
 //< Functions visit-function
@@ -254,7 +257,7 @@ class Interpreter implements Expr.Visitor<Object>,
       value = evaluate(stmt.initializer);
     }
 
-    environment.define(stmt.name.lexeme, value);
+    define(stmt.name, value);
     return null;
   }
 //< Statements and State visit-var
@@ -282,9 +285,14 @@ class Interpreter implements Expr.Visitor<Object>,
 
     Integer distance = locals.get(expr);
     if (distance != null) {
-      environment.assignAt(distance, expr.name, value);
+      environment.assignAt(distance, slots.get(expr), value);
     } else {
-      globals.assign(expr.name, value);
+      if (globals.containsKey(expr.name.lexeme)) {
+        globals.put(expr.name.lexeme, value);
+      }
+      else {
+        throw new RuntimeError(expr.name, "Undefined variable '" + expr.name.lexeme + "'.");
+      }
     }
 
 //< Resolving and Binding resolved-assign
@@ -477,11 +485,11 @@ public Object visitFunctionExpr(Expr.Function expr) {
   public Object visitSuperExpr(Expr.Super expr) {
     int distance = locals.get(expr);
     LoxClass superclass = (LoxClass)environment.getAt(
-        distance, "super");
+        distance, slots.get("super"));
 //> super-find-this
 
     LoxInstance object = (LoxInstance)environment.getAt(
-        distance - 1, "this");
+        distance - 1, slots.get("this"));
 //< super-find-this
 //> super-find-method
 
@@ -531,10 +539,6 @@ public Object visitFunctionExpr(Expr.Function expr) {
 /* Statements and State visit-variable < Resolving and Binding call-look-up-variable
     return environment.get(expr.name);
 */
-// Throw error if variable is equal to UNINITIALIZED object
-    if (lookUpVariable(expr.name, expr).equals(UNINITIALIZED)) {
-      throw new RuntimeError(expr.name, "Variable not initialized");
-    }
 //> Resolving and Binding call-look-up-variable
     return lookUpVariable(expr.name, expr);
 //< Resolving and Binding call-look-up-variable
@@ -543,9 +547,15 @@ public Object visitFunctionExpr(Expr.Function expr) {
   private Object lookUpVariable(Token name, Expr expr) {
     Integer distance = locals.get(expr);
     if (distance != null) {
-      return environment.getAt(distance, name.lexeme);
+      return environment.getAt(distance, slots.get(expr));
     } else {
-      return globals.get(name);
+      if (globals.containsKey(name.lexeme)) {
+        return globals.get(name.lexeme);
+      }
+      else {
+        throw new RuntimeError(name,
+            "Undefined variable '" + name.lexeme + "'.");
+      }
     }
   }
 //< Resolving and Binding look-up-variable
@@ -594,4 +604,11 @@ public Object visitFunctionExpr(Expr.Function expr) {
     return object.toString();
   }
 //< stringify
+  private void define(Token name, Object value) {
+    if (environment != null) {
+      environment.define(name.lexeme, value);
+    } else {
+      globals.put(name.lexeme, value);
+    }
+  }
 }
