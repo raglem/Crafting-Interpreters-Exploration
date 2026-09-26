@@ -118,7 +118,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
       }
 
 //< resolver-initializer-type
-      resolveFunction(method, declaration); // [local]
+      resolveFunction(method.function, declaration); // [local]
     }
 
 //> resolver-end-this-scope
@@ -153,7 +153,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     resolveFunction(stmt);
 */
 //> pass-function-type
-    resolveFunction(stmt, FunctionType.FUNCTION);
+    resolveFunction(stmt.function, FunctionType.FUNCTION);
 //< pass-function-type
     return null;
   }
@@ -243,14 +243,19 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     return null;
   }
-  @Override
+//< visit-call-expr
+@Override
+  public Void visitFunctionExpr(Expr.Function expr) {
+    resolveFunction(expr, FunctionType.FUNCTION);
+    return null;
+  }
+@Override
   public Void visitTernaryExpr(Expr.Ternary expr) {
     resolve(expr.condition);
     resolve(expr.thenExpr);
     resolve(expr.elseExpr);
     return null;
   }
-//< visit-call-expr
 //> Classes resolver-visit-get
   @Override
   public Void visitGetExpr(Expr.Get expr) {
@@ -355,14 +360,14 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   private void resolveFunction(Stmt.Function function) {
 */
 //> set-current-function
-  private void resolveFunction(
-      Stmt.Function function, FunctionType type) {
+    private void resolveFunction(
+      Expr.Function function, FunctionType type) {
     FunctionType enclosingFunction = currentFunction;
     currentFunction = type;
 
 //< set-current-function
     beginScope();
-    for (Token param : function.params) {
+    for (Token param : function.parameters) {
       declare(param);
       define(param);
     }

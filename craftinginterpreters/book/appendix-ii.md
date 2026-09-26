@@ -33,6 +33,12 @@ Function call expressions are introduced in
 
 ^code expr-call
 
+### Function expression
+
+Function as an expression, to support unnamed lambda functions.
+
+^code expr-function
+
 ### Get expression
 
 Property access, or "get" expressions are introduced in

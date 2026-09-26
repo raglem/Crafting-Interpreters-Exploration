@@ -88,7 +88,10 @@ class Parser {
       if (match(CLASS)) return classDeclaration();
 //< Classes match-class
 //> Functions match-fun
-      if (match(FUN)) return function("function");
+      if (check(FUN) && checkNext(IDENTIFIER)){
+        consume(FUN, null);
+        return function("function");
+      }
 //< Functions match-fun
       if (match(VAR)) return varDeclaration();
 
@@ -307,30 +310,29 @@ class Parser {
 //< Statements and State parse-expression-statement
 //> Functions parse-function
   private Stmt.Function function(String kind) {
-    Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
-//> parse-parameters
-    consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+    Token name = consume(IDENTIFIER, "Expected " + kind + " name.");
+    return new Stmt.Function(name, functionBody(kind));
+  }
+//< Functions parse-function
+//> Functions parse-body
+  private Expr.Function functionBody(String kind) {
+    consume(LEFT_PAREN, "Expected '(' after " + kind + "name.");
+//> Functions parse-parameters
     List<Token> parameters = new ArrayList<>();
     if (!check(RIGHT_PAREN)) {
       do {
-        if (parameters.size() >= 255) {
-          error(peek(), "Can't have more than 255 parameters.");
-        }
-
-        parameters.add(
-            consume(IDENTIFIER, "Expect parameter name."));
+        parameters.add(consume(IDENTIFIER, "Expected parameter name."));
       } while (match(COMMA));
     }
-    consume(RIGHT_PAREN, "Expect ')' after parameters.");
-//< parse-parameters
-//> parse-body
+    consume(RIGHT_PAREN, "Expected ')' after parameters");
+//< Functions parse-parameters
 
-    consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+    // Consume function body
+    consume(LEFT_BRACE, "Expected '{' before " + kind + " body.");
     List<Stmt> body = block();
-    return new Stmt.Function(name, parameters, body);
-//< parse-body
+    return new Expr.Function(parameters, body);
   }
-//< Functions parse-function
+//< Functions parse-body
 //> Statements and State block
   private List<Stmt> block() {
     List<Stmt> statements = new ArrayList<>();
@@ -543,6 +545,8 @@ class Parser {
     if (match(NUMBER, STRING)) {
       return new Expr.Literal(previous().literal);
     }
+
+    if (match(FUN)) return functionBody("function");
 //> Inheritance parse-super
 
     if (match(SUPER)) {
@@ -625,6 +629,13 @@ class Parser {
     return peek().type == type;
   }
 //< check
+//> check next
+  private boolean checkNext(TokenType type) {
+    if (isAtEnd())  return false;
+    if (tokens.get(current + 1).type == EOF)  return false;
+    return tokens.get(current + 1).type == type;
+  }
+//< check next
 //> advance
   private Token advance() {
     if (!isAtEnd()) current++;

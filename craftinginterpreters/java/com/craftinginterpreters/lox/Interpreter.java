@@ -166,7 +166,7 @@ class Interpreter implements Expr.Visitor<Object>,
       LoxFunction function = new LoxFunction(method, environment);
 */
 //> interpreter-method-initializer
-      LoxFunction function = new LoxFunction(method, environment,
+      LoxFunction function = new LoxFunction(method.name.lexeme, method.function, environment,
           method.name.lexeme.equals("init"));
 //< interpreter-method-initializer
       methods.put(method.name.lexeme, function);
@@ -211,7 +211,7 @@ class Interpreter implements Expr.Visitor<Object>,
     LoxFunction function = new LoxFunction(stmt, environment);
 */
 //> Classes construct-function
-    LoxFunction function = new LoxFunction(stmt, environment,
+    LoxFunction function = new LoxFunction(stmt.name.lexeme, stmt.function, environment,
                                            false);
 //< Classes construct-function
     environment.define(stmt.name.lexeme, function);
@@ -414,6 +414,11 @@ public Void visitTernaryExpr(Expr.Ternary expr) {
   return null;
 }
 //< Functions visit-call
+
+@Override 
+public Object visitFunctionExpr(Expr.Function expr) {
+  return new LoxFunction(null, expr, environment, false);
+}
 //> Classes interpreter-visit-get
   @Override
   public Object visitGetExpr(Expr.Get expr) {
