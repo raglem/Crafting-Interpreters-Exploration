@@ -425,6 +425,22 @@ create new file</div>
     <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">elseExpr</span>);
     <span class="k">return</span> <span class="k">null</span>;
   }
+
+  <span class="k">private</span> <span class="k">static</span> <span class="k">class</span> <span class="t">Variable</span> {
+    <span class="k">final</span> <span class="t">Token</span> <span class="i">name</span>;
+    <span class="t">VariableState</span> <span class="i">state</span>;
+
+    <span class="k">private</span> <span class="t">Variable</span>(<span class="t">Token</span> <span class="i">name</span>, <span class="t">VariableState</span> <span class="i">state</span>) {
+      <span class="k">this</span>.<span class="i">name</span> = <span class="i">name</span>;
+      <span class="k">this</span>.<span class="i">state</span> = <span class="i">state</span>;
+    }
+  }
+
+  <span class="k">private</span> <span class="k">enum</span> <span class="t">VariableState</span> {
+    <span class="i">DECLARED</span>,
+    <span class="i">DEFINED</span>,
+    <span class="i">READ</span>
+  }
 }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Resolver.java</em>, create new file</div>
@@ -506,7 +522,7 @@ like so:</p>
 <div class="codehilite"><div class="source-file"><em>lox/Resolver.java</em><br>
 add after <em>resolve</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">void</span> <span class="i">beginScope</span>() {
-    <span class="i">scopes</span>.<span class="i">push</span>(<span class="k">new</span> <span class="t">HashMap</span>&lt;<span class="t">String</span>, <span class="t">Boolean</span>&gt;());
+    <span class="i">scopes</span>.<span class="i">push</span>(<span class="k">new</span> <span class="t">HashMap</span>&lt;<span class="t">String</span>, <span class="t">Variable</span>&gt;());
   }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>resolve</em>()</div>
@@ -517,7 +533,7 @@ Environment objects. In the resolver, we use an actual Java Stack.</p>
 <div class="codehilite"><pre class="insert-before">  private final Interpreter interpreter;
 </pre><div class="source-file"><em>lox/Resolver.java</em><br>
 in class <em>Resolver</em></div>
-<pre class="insert">  <span class="k">private</span> <span class="k">final</span> <span class="t">Stack</span>&lt;<span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">Boolean</span>&gt;&gt; <span class="i">scopes</span> = <span class="k">new</span> <span class="t">Stack</span>&lt;&gt;();
+<pre class="insert">  <span class="k">private</span> <span class="k">final</span> <span class="t">Stack</span>&lt;<span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">Variable</span>&gt;&gt; <span class="i">scopes</span> = <span class="k">new</span> <span class="t">Stack</span>&lt;&gt;();
 </pre><pre class="insert-after">
 
   Resolver(Interpreter interpreter) {
@@ -536,7 +552,13 @@ of local scopes, we assume it must be global.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Resolver.java</em><br>
 add after <em>beginScope</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">void</span> <span class="i">endScope</span>() {
-    <span class="i">scopes</span>.<span class="i">pop</span>();
+    <span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">Variable</span>&gt; <span class="i">endScope</span> = <span class="i">scopes</span>.<span class="i">pop</span>();
+    <span class="k">for</span> (<span class="t">Map</span>.<span class="t">Entry</span>&lt;<span class="t">String</span>, <span class="t">Variable</span>&gt; <span class="i">entry</span>: <span class="i">endScope</span>.<span class="i">entrySet</span>()) {
+      <span class="t">System</span>.<span class="i">out</span>.<span class="i">println</span>(<span class="i">entry</span>.<span class="i">getValue</span>().<span class="i">name</span> + <span class="s">&quot;: &quot;</span> + <span class="i">entry</span>.<span class="i">getValue</span>().<span class="i">state</span>);
+      <span class="k">if</span> (<span class="i">entry</span>.<span class="i">getValue</span>().<span class="i">state</span> != <span class="t">VariableState</span>.<span class="i">READ</span>) {
+        <span class="t">Lox</span>.<span class="i">error</span>(<span class="i">entry</span>.<span class="i">getValue</span>().<span class="i">name</span>, <span class="s">&quot;Local variable is never used.&quot;</span>);
+      }
+    }
   }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>beginScope</em>()</div>
@@ -611,8 +633,8 @@ add after <em>endScope</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">void</span> <span class="i">declare</span>(<span class="t">Token</span> <span class="i">name</span>) {
     <span class="k">if</span> (<span class="i">scopes</span>.<span class="i">isEmpty</span>()) <span class="k">return</span>;
 
-    <span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">Boolean</span>&gt; <span class="i">scope</span> = <span class="i">scopes</span>.<span class="i">peek</span>();
-    <span class="i">scope</span>.<span class="i">put</span>(<span class="i">name</span>.<span class="i">lexeme</span>, <span class="k">false</span>);
+    <span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">Variable</span>&gt; <span class="i">scope</span> = <span class="i">scopes</span>.<span class="i">peek</span>();
+    <span class="i">scope</span>.<span class="i">put</span>(<span class="i">name</span>.<span class="i">lexeme</span>, <span class="k">new</span> <span class="t">Variable</span>(<span class="i">name</span>, <span class="t">VariableState</span>.<span class="i">DECLARED</span>));
   }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>endScope</em>()</div>
@@ -630,7 +652,7 @@ expression is done, the variable is ready for prime time. We do that by
 add after <em>declare</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">void</span> <span class="i">define</span>(<span class="t">Token</span> <span class="i">name</span>) {
     <span class="k">if</span> (<span class="i">scopes</span>.<span class="i">isEmpty</span>()) <span class="k">return</span>;
-    <span class="i">scopes</span>.<span class="i">peek</span>().<span class="i">put</span>(<span class="i">name</span>.<span class="i">lexeme</span>, <span class="k">true</span>);
+    <span class="i">scopes</span>.<span class="i">peek</span>().<span class="i">put</span>(<span class="i">name</span>.<span class="i">lexeme</span>, <span class="k">new</span> <span class="t">Variable</span>(<span class="i">name</span>, <span class="t">VariableState</span>.<span class="i">DEFINED</span>));
   }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Resolver.java</em>, add after <em>declare</em>()</div>
@@ -645,12 +667,12 @@ add after <em>visitTernaryExpr</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitVariableExpr</span>(<span class="t">Expr</span>.<span class="t">Variable</span> <span class="i">expr</span>) {
     <span class="k">if</span> (!<span class="i">scopes</span>.<span class="i">isEmpty</span>() &amp;&amp;
-        <span class="i">scopes</span>.<span class="i">peek</span>().<span class="i">get</span>(<span class="i">expr</span>.<span class="i">name</span>.<span class="i">lexeme</span>) == <span class="t">Boolean</span>.<span class="i">FALSE</span>) {
+        <span class="i">scopes</span>.<span class="i">peek</span>().<span class="i">get</span>(<span class="i">expr</span>.<span class="i">name</span>.<span class="i">lexeme</span>).<span class="i">state</span> == <span class="t">VariableState</span>.<span class="i">DECLARED</span>) {
       <span class="t">Lox</span>.<span class="i">error</span>(<span class="i">expr</span>.<span class="i">name</span>,
           <span class="s">&quot;Can&#39;t read local variable in its own initializer.&quot;</span>);
     }
 
-    <span class="i">resolveLocal</span>(<span class="i">expr</span>, <span class="i">expr</span>.<span class="i">name</span>);
+    <span class="i">resolveLocal</span>(<span class="i">expr</span>, <span class="i">expr</span>.<span class="i">name</span>, <span class="k">true</span>);
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
@@ -663,10 +685,13 @@ have declared it but not yet defined it. We report that error.</p>
 <p>After that check, we actually resolve the variable itself using this helper:</p>
 <div class="codehilite"><div class="source-file"><em>lox/Resolver.java</em><br>
 add after <em>define</em>()</div>
-<pre>  <span class="k">private</span> <span class="t">void</span> <span class="i">resolveLocal</span>(<span class="t">Expr</span> <span class="i">expr</span>, <span class="t">Token</span> <span class="i">name</span>) {
+<pre>  <span class="k">private</span> <span class="t">void</span> <span class="i">resolveLocal</span>(<span class="t">Expr</span> <span class="i">expr</span>, <span class="t">Token</span> <span class="i">name</span>, <span class="t">boolean</span> <span class="i">read</span>) {
     <span class="k">for</span> (<span class="t">int</span> <span class="i">i</span> = <span class="i">scopes</span>.<span class="i">size</span>() - <span class="n">1</span>; <span class="i">i</span> &gt;= <span class="n">0</span>; <span class="i">i</span>--) {
       <span class="k">if</span> (<span class="i">scopes</span>.<span class="i">get</span>(<span class="i">i</span>).<span class="i">containsKey</span>(<span class="i">name</span>.<span class="i">lexeme</span>)) {
         <span class="i">interpreter</span>.<span class="i">resolve</span>(<span class="i">expr</span>, <span class="i">scopes</span>.<span class="i">size</span>() - <span class="n">1</span> - <span class="i">i</span>);
+        <span class="k">if</span> (<span class="i">read</span>) {
+          <span class="i">scopes</span>.<span class="i">get</span>(<span class="i">i</span>).<span class="i">get</span>(<span class="i">name</span>.<span class="i">lexeme</span>).<span class="i">state</span> = <span class="t">VariableState</span>.<span class="i">READ</span>;
+        }
         <span class="k">return</span>;
       }
     }
@@ -692,7 +717,7 @@ add after <em>visitVarStmt</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitAssignExpr</span>(<span class="t">Expr</span>.<span class="t">Assign</span> <span class="i">expr</span>) {
     <span class="i">resolve</span>(<span class="i">expr</span>.<span class="i">value</span>);
-    <span class="i">resolveLocal</span>(<span class="i">expr</span>, <span class="i">expr</span>.<span class="i">name</span>);
+    <span class="i">resolveLocal</span>(<span class="i">expr</span>, <span class="i">expr</span>.<span class="i">name</span>, <span class="k">false</span>);
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
@@ -1126,7 +1151,7 @@ variable already existed, they would have assigned to it instead of using <code>
 And if they <em>didn&rsquo;t</em> know it existed, they probably didn&rsquo;t intend to overwrite
 the previous one.</p>
 <p>We can detect this mistake statically while resolving.</p>
-<div class="codehilite"><pre class="insert-before">    Map&lt;String, Boolean&gt; scope = scopes.peek();
+<div class="codehilite"><pre class="insert-before">    Map&lt;String, Variable&gt; scope = scopes.peek();
 </pre><div class="source-file"><em>lox/Resolver.java</em><br>
 in <em>declare</em>()</div>
 <pre class="insert">    <span class="k">if</span> (<span class="i">scope</span>.<span class="i">containsKey</span>(<span class="i">name</span>.<span class="i">lexeme</span>)) {
@@ -1134,7 +1159,7 @@ in <em>declare</em>()</div>
           <span class="s">&quot;Already a variable with this name in this scope.&quot;</span>);
     }
 
-</pre><pre class="insert-after">    scope.put(name.lexeme, false);
+</pre><pre class="insert-after">    scope.put(name.lexeme, new Variable(name, VariableState.DECLARED));
 </pre></div>
 <div class="source-file-narrow"><em>lox/Resolver.java</em>, in <em>declare</em>()</div>
 
@@ -1151,7 +1176,7 @@ I don&rsquo;t think we want Lox to allow this.</p>
 <p>We can extend the resolver to detect this statically. Much like we track scopes
 as we walk the tree, we can track whether or not the code we are currently
 visiting is inside a function declaration.</p>
-<div class="codehilite"><pre class="insert-before">  private final Stack&lt;Map&lt;String, Boolean&gt;&gt; scopes = new Stack&lt;&gt;();
+<div class="codehilite"><pre class="insert-before">  private final Stack&lt;Map&lt;String, Variable&gt;&gt; scopes = new Stack&lt;&gt;();
 </pre><div class="source-file"><em>lox/Resolver.java</em><br>
 in class <em>Resolver</em></div>
 <pre class="insert">  <span class="k">private</span> <span class="t">FunctionType</span> <span class="i">currentFunction</span> = <span class="t">FunctionType</span>.<span class="i">NONE</span>;
