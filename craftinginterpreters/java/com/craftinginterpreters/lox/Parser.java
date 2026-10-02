@@ -9,8 +9,6 @@ import java.util.Arrays;
 //< Control Flow import-arrays
 import java.util.List;
 
-import com.craftinginterpreters.lox.Stmt.Break;
-
 import static com.craftinginterpreters.lox.TokenType.*;
 
 class Parser {
@@ -22,11 +20,8 @@ class Parser {
   private int current = 0;
 
 // for parsing expression in REPL
-  private boolean allowExpression = true;
-  private boolean foundExpression = false;  
-
-// for break statement
-  private int loopDepth = 0;
+private boolean allowExpression = true;
+private boolean foundExpression = false;  
 
   Parser(List<Token> tokens) {
     this.tokens = tokens;
@@ -143,7 +138,6 @@ class Parser {
 //> Functions match-return
     if (match(RETURN)) return returnStatement();
 //< Functions match-return
-    if (match(BREAK)) return breakStatement();
 //> Control Flow match-while
     if (match(WHILE)) return whileStatement();
 //< Control Flow match-while
@@ -188,36 +182,29 @@ class Parser {
     consume(RIGHT_PAREN, "Expect ')' after for clauses.");
 //< for-increment
 //> for-body
+    Stmt body = statement();
 
-    try {
-      loopDepth += 1;
-      Stmt body = statement();
-
-  //> for-desugar-increment
-      if (increment != null) {
-        body = new Stmt.Block(
-            Arrays.asList(
-                body,
-                new Stmt.Expression(increment)));
-      }
-
-  //< for-desugar-increment
-  //> for-desugar-condition
-      if (condition == null) condition = new Expr.Literal(true);
-      body = new Stmt.While(condition, body);
-
-  //< for-desugar-condition
-  //> for-desugar-initializer
-      if (initializer != null) {
-        body = new Stmt.Block(Arrays.asList(initializer, body));
-      }
-
-  //< for-desugar-initializer
-      return body;
+//> for-desugar-increment
+    if (increment != null) {
+      body = new Stmt.Block(
+          Arrays.asList(
+              body,
+              new Stmt.Expression(increment)));
     }
-    finally {
-      loopDepth -= 1;
+
+//< for-desugar-increment
+//> for-desugar-condition
+    if (condition == null) condition = new Expr.Literal(true);
+    body = new Stmt.While(condition, body);
+
+//< for-desugar-condition
+//> for-desugar-initializer
+    if (initializer != null) {
+      body = new Stmt.Block(Arrays.asList(initializer, body));
     }
+
+//< for-desugar-initializer
+    return body;
 //< for-body
   }
 //< Control Flow for-statement
@@ -270,29 +257,14 @@ class Parser {
 //< Statements and State parse-var-declaration
 //> Control Flow while-statement
   private Stmt whileStatement() {
-    try {
-      consume(LEFT_PAREN, "Expect '(' after 'while'.");
-      Expr condition = expression();
-      consume(RIGHT_PAREN, "Expect ')' after condition.");
-      loopDepth += 1;
-      Stmt body = statement();
+    consume(LEFT_PAREN, "Expect '(' after 'while'.");
+    Expr condition = expression();
+    consume(RIGHT_PAREN, "Expect ')' after condition.");
+    Stmt body = statement();
 
-      return new Stmt.While(condition, body);
-    }
-    finally {
-      loopDepth -= 1;
-    }
+    return new Stmt.While(condition, body);
   }
 //< Control Flow while-statement
-
-  private Stmt breakStatement() {
-    if (loopDepth == 0) {
-      error(previous(), "'break' can only be applied inside a loop");
-    }
-    consume(SEMICOLON, "Expect ';' after 'break' keyword");
-    return new Stmt.Break();
-  }
-
 //> Statements and State parse-expression-statement
   private Stmt expressionStatement() {
     Expr expr = expression();
