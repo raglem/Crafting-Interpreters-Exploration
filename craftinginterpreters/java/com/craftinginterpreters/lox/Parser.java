@@ -19,10 +19,6 @@ class Parser {
   private final List<Token> tokens;
   private int current = 0;
 
-// for parsing expression in REPL
-private boolean allowExpression = true;
-private boolean foundExpression = false;  
-
   Parser(List<Token> tokens) {
     this.tokens = tokens;
   }
@@ -49,22 +45,6 @@ private boolean foundExpression = false;
 
     return statements; // [parse-error-handling]
   }
-
-  Object parseRepl() {
-    allowExpression = true;
-    List<Stmt> statements = new ArrayList<>();
-    while (!isAtEnd()) {
-      statements.add(declaration());
-
-      if (foundExpression) {
-        Stmt last = statements.get(statements.size() - 1);
-        return ((Stmt.Expression) last).expression;
-      }
-
-      allowExpression = false;
-    }
-    return statements;
-  }
 //< Statements and State parse
 //> expression
   private Expr expression() {
@@ -72,7 +52,7 @@ private boolean foundExpression = false;
     return equality();
 */
 //> Statements and State expression
-    return comma();
+    return assignment();
 //< Statements and State expression
   }
 //< expression
@@ -83,10 +63,7 @@ private boolean foundExpression = false;
       if (match(CLASS)) return classDeclaration();
 //< Classes match-class
 //> Functions match-fun
-      if (check(FUN) && checkNext(IDENTIFIER)){
-        consume(FUN, null);
-        return function("function");
-      }
+      if (match(FUN)) return function("function");
 //< Functions match-fun
       if (match(VAR)) return varDeclaration();
 
@@ -268,43 +245,36 @@ private boolean foundExpression = false;
 //> Statements and State parse-expression-statement
   private Stmt expressionStatement() {
     Expr expr = expression();
-
-    // If the statement is actually an expression, we want to set the flag foundExpression to true
-    // When parsing a REPL, we will return an expression instead of a list of statements
-    if (allowExpression && isAtEnd()) {
-      foundExpression = true;
-    }
-    else { // If not expression, it should be treated as statement
-      consume(SEMICOLON, "Expect ';' after expression.");
-    }
+    consume(SEMICOLON, "Expect ';' after expression.");
     return new Stmt.Expression(expr);
   }
 //< Statements and State parse-expression-statement
 //> Functions parse-function
   private Stmt.Function function(String kind) {
-    Token name = consume(IDENTIFIER, "Expected " + kind + " name.");
-    return new Stmt.Function(name, functionBody(kind));
-  }
-//< Functions parse-function
-//> Functions parse-body
-  private Expr.Function functionBody(String kind) {
-    consume(LEFT_PAREN, "Expected '(' after " + kind + "name.");
-//> Functions parse-parameters
+    Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+//> parse-parameters
+    consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
     List<Token> parameters = new ArrayList<>();
     if (!check(RIGHT_PAREN)) {
       do {
-        parameters.add(consume(IDENTIFIER, "Expected parameter name."));
+        if (parameters.size() >= 255) {
+          error(peek(), "Can't have more than 255 parameters.");
+        }
+
+        parameters.add(
+            consume(IDENTIFIER, "Expect parameter name."));
       } while (match(COMMA));
     }
-    consume(RIGHT_PAREN, "Expected ')' after parameters");
-//< Functions parse-parameters
+    consume(RIGHT_PAREN, "Expect ')' after parameters.");
+//< parse-parameters
+//> parse-body
 
-    // Consume function body
-    consume(LEFT_BRACE, "Expected '{' before " + kind + " body.");
+    consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
     List<Stmt> body = block();
-    return new Expr.Function(parameters, body);
+    return new Stmt.Function(name, parameters, body);
+//< parse-body
   }
-//< Functions parse-body
+//< Functions parse-function
 //> Statements and State block
   private List<Stmt> block() {
     List<Stmt> statements = new ArrayList<>();
@@ -316,33 +286,6 @@ private boolean foundExpression = false;
     consume(RIGHT_BRACE, "Expect '}' after block.");
     return statements;
   }
-  // ### MY CODE - Chapter 6 Challenge 1 ###
-  private Expr comma() {
-    Expr expr = ternary();
-
-    while (match(COMMA)) {
-      Token operator = previous();
-      Expr right = ternary();
-      expr = new Expr.Binary(expr, operator, right);
-    }
-    return expr;
-  }
-  // ### END OF MY CODE ###
-
-  // ### MY CODE - Chapter 6 Challenge 2 ###
-  private Expr ternary() {
-    Expr expr = assignment();
-
-    if (match(QUESTION)) {
-      Expr thenExpr = expression();
-      consume(COLON, "Expected ':' after ternary operator");
-      Expr elseExpr = expression();
-      expr = new Expr.Ternary(expr, thenExpr, elseExpr);
-    }
-    return expr;
-  }
-  // ## END OF MY CODE ###
-
 //< Statements and State block
 //> Statements and State parse-assignment
   private Expr assignment() {
@@ -477,7 +420,7 @@ private boolean foundExpression = false;
           error(peek(), "Can't have more than 255 arguments.");
         }
 //< check-max-arity
-        arguments.add(ternary()); // I ran into an issue passing multiple arguments to functions. I changed this to ternary() because my work with ternary operators broke this behavior.
+        arguments.add(expression());
       } while (match(COMMA));
     }
 
@@ -517,8 +460,6 @@ private boolean foundExpression = false;
     if (match(NUMBER, STRING)) {
       return new Expr.Literal(previous().literal);
     }
-
-    if (match(FUN)) return functionBody("function");
 //> Inheritance parse-super
 
     if (match(SUPER)) {
@@ -546,31 +487,6 @@ private boolean foundExpression = false;
       return new Expr.Grouping(expr);
     }
 //> primary-error
-
-    // ### MY CODE: Chapter 6 Challenge 3 ###
-    if (match(EQUAL, BANG_EQUAL)) {
-      error(previous(), "Missing left-hand operand. ");
-      equality();
-      return null;
-    }
-
-    if (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
-      error(previous(), "Missing left-hand operand. ");
-      comparison();
-      return null;
-    }
-
-    if (match(SLASH, STAR)) {
-      error(previous(), "Missing left-hand operand. ");
-      factor();
-      return null;
-    }
-
-    if (match(PLUS)){
-      error(previous(), "Missing left-hand operand. ");
-      term();
-      return null;
-    }
 
     throw error(peek(), "Expect expression.");
 //< primary-error
@@ -601,13 +517,6 @@ private boolean foundExpression = false;
     return peek().type == type;
   }
 //< check
-//> check next
-  private boolean checkNext(TokenType type) {
-    if (isAtEnd())  return false;
-    if (tokens.get(current + 1).type == EOF)  return false;
-    return tokens.get(current + 1).type == type;
-  }
-//< check next
 //> advance
   private Token advance() {
     if (!isAtEnd()) current++;

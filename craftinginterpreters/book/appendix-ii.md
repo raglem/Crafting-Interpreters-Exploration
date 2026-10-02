@@ -33,12 +33,6 @@ Function call expressions are introduced in
 
 ^code expr-call
 
-### Function expression
-
-Function as an expression, to support unnamed lambda functions.
-
-^code expr-function
-
 ### Get expression
 
 Property access, or "get" expressions are introduced in
@@ -163,12 +157,6 @@ Variable declarations are introduced in "[Statements and
 State](statements-and-state.html#variable-syntax)".
 
 ^code stmt-var
-
-### Ternary expression
-
-The conditional or ternary expression.
-
-^code expr-ternary
 
 ### While statement
 

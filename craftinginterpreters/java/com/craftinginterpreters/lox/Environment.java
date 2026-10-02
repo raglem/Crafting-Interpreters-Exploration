@@ -1,14 +1,14 @@
 //> Statements and State environment-class
 package com.craftinginterpreters.lox;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 class Environment {
 //> enclosing-field
   final Environment enclosing;
 //< enclosing-field
-  private final List<Object> values = new ArrayList<Object>();
+  private final Map<String, Object> values = new HashMap<>();
 //> environment-constructors
   Environment() {
     enclosing = null;
@@ -18,10 +18,43 @@ class Environment {
     this.enclosing = enclosing;
   }
 //< environment-constructors
+//> environment-get
 
+  Object get(Token name) {
+    if (values.containsKey(name.lexeme)) {
+      return values.get(name.lexeme);
+    }
+//> environment-get-enclosing
+
+    if (enclosing != null) return enclosing.get(name);
+//< environment-get-enclosing
+
+    throw new RuntimeError(name,
+        "Undefined variable '" + name.lexeme + "'.");
+  }
+
+//< environment-get
+//> environment-assign
+  void assign(Token name, Object value) {
+    if (values.containsKey(name.lexeme)) {
+      values.put(name.lexeme, value);
+      return;
+    }
+
+//> environment-assign-enclosing
+    if (enclosing != null) {
+      enclosing.assign(name, value);
+      return;
+    }
+
+//< environment-assign-enclosing
+    throw new RuntimeError(name,
+        "Undefined variable '" + name.lexeme + "'.");
+  }
+//< environment-assign
 //> environment-define
   void define(String name, Object value) {
-    values.add(value);
+    values.put(name, value);
   }
 //< environment-define
 //> Resolving and Binding ancestor
@@ -35,27 +68,13 @@ class Environment {
   }
 //< Resolving and Binding ancestor
 //> Resolving and Binding get-at
-  Object getAt(int distance, int slot) {
-    Environment environment = this;
-
-    // Go up scopes
-    for (int i = 0; i < distance; i++) {
-      environment = environment.enclosing;
-    }
-
-    return environment.values.get(slot);
+  Object getAt(int distance, String name) {
+    return ancestor(distance).values.get(name);
   }
 //< Resolving and Binding get-at
 //> Resolving and Binding assign-at
-  void assignAt(int distance, int slot, Object value) {
-    Environment environment = this;
-
-    // Go up scopes
-    for (int i = 0; i < distance; i++) {
-      environment = environment.enclosing;
-    }
-
-    environment.values.set(slot, value);
+  void assignAt(int distance, Token name, Object value) {
+    ancestor(distance).values.put(name.lexeme, value);
   }
 //< Resolving and Binding assign-at
 //> omit

@@ -9,7 +9,7 @@ import java.util.Stack;
 class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   private final Interpreter interpreter;
 //> scopes-field
-  private final Stack<Map<String, Variable>> scopes = new Stack<>();
+  private final Stack<Map<String, Boolean>> scopes = new Stack<>();
 //< scopes-field
 //> function-type-field
   private FunctionType currentFunction = FunctionType.NONE;
@@ -96,14 +96,14 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     if (stmt.superclass != null) {
       beginScope();
-      scopes.peek().put("super", new Variable(null, -1, null));
+      scopes.peek().put("super", true);
     }
 //< Inheritance begin-super-scope
 //> resolve-methods
 
 //> resolver-begin-this-scope
     beginScope();
-    scopes.peek().put("this", new Variable(null, -1, null));
+    scopes.peek().put("this", true);
 
 //< resolver-begin-this-scope
     for (Stmt.Function method : stmt.methods) {
@@ -114,7 +114,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
       }
 
 //< resolver-initializer-type
-      resolveFunction(method.function, declaration); // [local]
+      resolveFunction(method, declaration); // [local]
     }
 
 //> resolver-end-this-scope
@@ -149,7 +149,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     resolveFunction(stmt);
 */
 //> pass-function-type
-    resolveFunction(stmt.function, FunctionType.FUNCTION);
+    resolveFunction(stmt, FunctionType.FUNCTION);
 //< pass-function-type
     return null;
   }
@@ -216,7 +216,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   @Override
   public Void visitAssignExpr(Expr.Assign expr) {
     resolve(expr.value);
-    resolveLocal(expr, expr.name, false);
+    resolveLocal(expr, expr.name);
     return null;
   }
 //< visit-assign-expr
@@ -240,18 +240,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     return null;
   }
 //< visit-call-expr
-@Override
-  public Void visitFunctionExpr(Expr.Function expr) {
-    resolveFunction(expr, FunctionType.FUNCTION);
-    return null;
-  }
-@Override
-  public Void visitTernaryExpr(Expr.Ternary expr) {
-    resolve(expr.condition);
-    resolve(expr.thenExpr);
-    resolve(expr.elseExpr);
-    return null;
-  }
 //> Classes resolver-visit-get
   @Override
   public Void visitGetExpr(Expr.Get expr) {
@@ -301,7 +289,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
 //< invalid-super
-    resolveLocal(expr, expr.keyword, false);
+    resolveLocal(expr, expr.keyword);
     return null;
   }
 //< Inheritance resolve-super-expr
@@ -316,7 +304,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
 //< this-outside-of-class
-    resolveLocal(expr, expr.keyword, false);
+    resolveLocal(expr, expr.keyword);
     return null;
   }
 
@@ -331,13 +319,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 //> visit-variable-expr
   @Override
   public Void visitVariableExpr(Expr.Variable expr) {
-    if (!scopes.isEmpty() && scopes.peek().containsKey(expr.name.lexeme) &&
-        scopes.peek().get(expr.name.lexeme).state == VariableState.DECLARED) {
+    if (!scopes.isEmpty() &&
+        scopes.peek().get(expr.name.lexeme) == Boolean.FALSE) {
       Lox.error(expr.name,
           "Can't read local variable in its own initializer.");
     }
 
-    resolveLocal(expr, expr.name, true);
+    resolveLocal(expr, expr.name);
     return null;
   }
 //< visit-variable-expr
@@ -356,14 +344,14 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   private void resolveFunction(Stmt.Function function) {
 */
 //> set-current-function
-    private void resolveFunction(
-      Expr.Function function, FunctionType type) {
+  private void resolveFunction(
+      Stmt.Function function, FunctionType type) {
     FunctionType enclosingFunction = currentFunction;
     currentFunction = type;
 
 //< set-current-function
     beginScope();
-    for (Token param : function.parameters) {
+    for (Token param : function.params) {
       declare(param);
       define(param);
     }
@@ -376,24 +364,19 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 //< resolve-function
 //> begin-scope
   private void beginScope() {
-    scopes.push(new HashMap<String, Variable>());
+    scopes.push(new HashMap<String, Boolean>());
   }
 //< begin-scope
 //> end-scope
   private void endScope() {
-    Map<String, Variable> endScope = scopes.pop();
-    for (Map.Entry<String, Variable> entry: endScope.entrySet()) {
-      if (entry.getValue().state != VariableState.READ) {
-        Lox.error(entry.getValue().name, "Local variable is never used.");
-      }
-    }
+    scopes.pop();
   }
 //< end-scope
 //> declare
   private void declare(Token name) {
     if (scopes.isEmpty()) return;
 
-    Map<String, Variable> scope = scopes.peek();
+    Map<String, Boolean> scope = scopes.peek();
 //> duplicate-variable
     if (scope.containsKey(name.lexeme)) {
       Lox.error(name,
@@ -401,44 +384,23 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
 //< duplicate-variable
-    scope.put(name.lexeme, new Variable(name, scope.size(), VariableState.DECLARED));
+    scope.put(name.lexeme, false);
   }
 //< declare
 //> define
   private void define(Token name) {
     if (scopes.isEmpty()) return;
-    scopes.peek().get(name.lexeme).state = VariableState.DEFINED;
+    scopes.peek().put(name.lexeme, true);
   }
 //< define
 //> resolve-local
-  private void resolveLocal(Expr expr, Token name, boolean read) {
+  private void resolveLocal(Expr expr, Token name) {
     for (int i = scopes.size() - 1; i >= 0; i--) {
       if (scopes.get(i).containsKey(name.lexeme)) {
-        interpreter.resolve(expr, scopes.size() - 1 - i, scopes.get(i).get(name.lexeme).slot);
-        if (read) {
-          scopes.get(i).get(name.lexeme).state = VariableState.READ;
-        }
+        interpreter.resolve(expr, scopes.size() - 1 - i);
         return;
       }
     }
   }
 //< resolve-local
-
-  private static class Variable {
-    final Token name;
-    final int slot;
-    VariableState state;
-
-    private Variable(Token name, int slot, VariableState state) {
-      this.name = name;
-      this.slot = slot;
-      this.state = state;
-    }
-  }
-
-  private enum VariableState {
-    DECLARED,
-    DEFINED, 
-    READ
-  }
 }

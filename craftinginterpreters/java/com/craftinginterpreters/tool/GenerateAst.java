@@ -22,9 +22,6 @@ public class GenerateAst {
 //> Functions call-expr
       "Call     : Expr callee, Token paren, List<Expr> arguments",
 //< Functions call-expr
-//> Functions function-ast
-      "Function: List<Token> parameters, List<Stmt> body",
-//< Functions function-ast
 //> Classes get-ast
       "Get      : Expr object, Token name",
 //< Classes get-ast
@@ -47,8 +44,7 @@ public class GenerateAst {
 */
 //> Statements and State var-expr
       "Unary    : Token operator, Expr right",
-      "Variable : Token name",
-      "Ternary : Expr condition, Expr thenExpr, Expr elseExpr"
+      "Variable : Token name"
 //< Statements and State var-expr
     ));
 //> Statements and State stmt-ast
@@ -66,7 +62,8 @@ public class GenerateAst {
 //< Inheritance superclass-ast
       "Expression : Expr expression",
 //> Functions function-ast
-      "Function   : Token name, Expr.Function function",
+      "Function   : Token name, List<Token> params," +
+                  " List<Stmt> body",
 //< Functions function-ast
 //> Control Flow if-ast
       "If         : Expr condition, Stmt thenBranch," +

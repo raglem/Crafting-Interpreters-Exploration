@@ -193,20 +193,9 @@ add after <em>runFile</em>()</div>
 
     <span class="k">for</span> (;;) {<span name="repl"> </span>
       <span class="t">System</span>.<span class="i">out</span>.<span class="i">print</span>(<span class="s">&quot;&gt; &quot;</span>);
-      <span class="t">Scanner</span> <span class="i">scanner</span> = <span class="k">new</span> <span class="t">Scanner</span>(<span class="i">reader</span>.<span class="i">readLine</span>());
-      <span class="t">List</span>&lt;<span class="t">Token</span>&gt; <span class="i">tokens</span> = <span class="i">scanner</span>.<span class="i">scanTokens</span>();
-
-      <span class="t">Parser</span> <span class="i">parser</span> = <span class="k">new</span> <span class="t">Parser</span>(<span class="i">tokens</span>);
-      <span class="t">Object</span> <span class="i">syntax</span> = <span class="i">parser</span>.<span class="i">parseRepl</span>();
-
-      <span class="k">if</span> (<span class="i">hadError</span>) <span class="k">continue</span>;
-
-      <span class="k">if</span>(<span class="i">syntax</span> <span class="k">instanceof</span> <span class="t">List</span>) {
-        <span class="i">interpreter</span>.<span class="i">interpret</span>((<span class="t">List</span>&lt;<span class="t">Stmt</span>&gt;)(<span class="i">syntax</span>));
-      } <span class="k">else</span> <span class="k">if</span> (<span class="i">syntax</span> <span class="k">instanceof</span> <span class="t">Expr</span>) {
-        <span class="t">String</span> <span class="i">result</span> = <span class="i">interpreter</span>.<span class="i">interpret</span>((<span class="t">Expr</span>)(<span class="i">syntax</span>));
-        <span class="t">System</span>.<span class="i">out</span>.<span class="i">println</span>(<span class="i">result</span>);
-      }
+      <span class="t">String</span> <span class="i">line</span> = <span class="i">reader</span>.<span class="i">readLine</span>();
+      <span class="k">if</span> (<span class="i">line</span> == <span class="k">null</span>) <span class="k">break</span>;
+      <span class="i">run</span>(<span class="i">line</span>);
     }
   }
 </pre></div>
@@ -312,7 +301,7 @@ in <em>runFile</em>()</div>
 
 <p>We need to reset this flag in the interactive loop. If the user makes a mistake,
 it shouldn&rsquo;t kill their entire session.</p>
-<div class="codehilite"><pre class="insert-before">      }
+<div class="codehilite"><pre class="insert-before">      run(line);
 </pre><div class="source-file"><em>lox/Lox.java</em><br>
 in <em>runPrompt</em>()</div>
 <pre class="insert">      <span class="i">hadError</span> = <span class="k">false</span>;
@@ -378,7 +367,6 @@ create new file</div>
   <span class="c">// Single-character tokens.</span>
   <span class="i">LEFT_PAREN</span>, <span class="i">RIGHT_PAREN</span>, <span class="i">LEFT_BRACE</span>, <span class="i">RIGHT_BRACE</span>,
   <span class="i">COMMA</span>, <span class="i">DOT</span>, <span class="i">MINUS</span>, <span class="i">PLUS</span>, <span class="i">SEMICOLON</span>, <span class="i">SLASH</span>, <span class="i">STAR</span>,
-  <span class="i">QUESTION</span>, <span class="i">COLON</span>,
 
   <span class="c">// One or two character tokens.</span>
   <span class="i">BANG</span>, <span class="i">BANG_EQUAL</span>,
@@ -390,7 +378,7 @@ create new file</div>
   <span class="i">IDENTIFIER</span>, <span class="i">STRING</span>, <span class="i">NUMBER</span>,
 
   <span class="c">// Keywords.</span>
-  <span class="i">AND</span>, <span class="i">BREAK</span>, <span class="i">CLASS</span>, <span class="i">ELSE</span>, <span class="i">FALSE</span>, <span class="i">FUN</span>, <span class="i">FOR</span>, <span class="i">IF</span>, <span class="i">NIL</span>, <span class="i">OR</span>,
+  <span class="i">AND</span>, <span class="i">CLASS</span>, <span class="i">ELSE</span>, <span class="i">FALSE</span>, <span class="i">FUN</span>, <span class="i">FOR</span>, <span class="i">IF</span>, <span class="i">NIL</span>, <span class="i">OR</span>,
   <span class="i">PRINT</span>, <span class="i">RETURN</span>, <span class="i">SUPER</span>, <span class="i">THIS</span>, <span class="i">TRUE</span>, <span class="i">VAR</span>, <span class="i">WHILE</span>,
 
   <span class="i">EOF</span>
@@ -593,8 +581,6 @@ add after <em>scanTokens</em>()</div>
       <span class="k">case</span> <span class="s">&#39;+&#39;</span>: <span class="i">addToken</span>(<span class="i">PLUS</span>); <span class="k">break</span>;
       <span class="k">case</span> <span class="s">&#39;;&#39;</span>: <span class="i">addToken</span>(<span class="i">SEMICOLON</span>); <span class="k">break</span>;
       <span class="k">case</span> <span class="s">&#39;*&#39;</span>: <span class="i">addToken</span>(<span class="i">STAR</span>); <span class="k">break</span>;<span name="slash"> </span>
-      <span class="k">case</span> <span class="s">&#39;?&#39;</span>: <span class="i">addToken</span>(<span class="i">QUESTION</span>); <span class="k">break</span>;
-      <span class="k">case</span> <span class="s">&#39;:&#39;</span>: <span class="i">addToken</span>(<span class="i">COLON</span>); <span class="k">break</span>;
     }
   }
 </pre></div>
@@ -632,7 +618,7 @@ characters Lox doesn&rsquo;t use, like <code>@#^</code>, at our interpreter? Rig
 characters get silently discarded. They aren&rsquo;t used by the Lox language, but
 that doesn&rsquo;t mean the interpreter can pretend they aren&rsquo;t there. Instead, we
 report an error.</p>
-<div class="codehilite"><pre class="insert-before">      case ':': addToken(COLON); break;
+<div class="codehilite"><pre class="insert-before">      case '*': addToken(STAR); break;<span name="slash"> </span>
 </pre><div class="source-file"><em>lox/Scanner.java</em><br>
 in <em>scanToken</em>()</div>
 <pre class="insert">
@@ -669,7 +655,7 @@ That&rsquo;s why we need to scan <code>!=</code> as a single lexeme. Likewise, <
 can all be followed by <code>=</code> to create the other equality and comparison
 operators.</p>
 <p>For all of these, we need to look at the second character.</p>
-<div class="codehilite"><pre class="insert-before">      case ':': addToken(COLON); break;
+<div class="codehilite"><pre class="insert-before">      case '*': addToken(STAR); break;<span name="slash"> </span>
 </pre><div class="source-file"><em>lox/Scanner.java</em><br>
 in <em>scanToken</em>()</div>
 <pre class="insert">      <span class="k">case</span> <span class="s">&#39;!&#39;</span>:
@@ -1042,7 +1028,6 @@ in class <em>Scanner</em></div>
   <span class="k">static</span> {
     <span class="i">keywords</span> = <span class="k">new</span> <span class="t">HashMap</span>&lt;&gt;();
     <span class="i">keywords</span>.<span class="i">put</span>(<span class="s">&quot;and&quot;</span>,    <span class="i">AND</span>);
-    <span class="i">keywords</span>.<span class="i">put</span>(<span class="s">&quot;break&quot;</span>, <span class="i">BREAK</span>);
     <span class="i">keywords</span>.<span class="i">put</span>(<span class="s">&quot;class&quot;</span>,  <span class="i">CLASS</span>);
     <span class="i">keywords</span>.<span class="i">put</span>(<span class="s">&quot;else&quot;</span>,   <span class="i">ELSE</span>);
     <span class="i">keywords</span>.<span class="i">put</span>(<span class="s">&quot;false&quot;</span>,  <span class="i">FALSE</span>);

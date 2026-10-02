@@ -25,24 +25,18 @@ class Interpreter implements Expr.Visitor<Object>,
   private Environment environment = new Environment();
 */
 //> Functions global-environment
-  final Map<String, Object> globals = new HashMap<>();
-  private Environment environment;
+  final Environment globals = new Environment();
+  private Environment environment = globals;
 //< Functions global-environment
 //> Resolving and Binding locals-field
   private final Map<Expr, Integer> locals = new HashMap<>();
 //< Resolving and Binding locals-field
-  private final Map<Expr, Integer> slots = new HashMap<>();
 //> Statements and State environment-field
 
 //< Statements and State environment-field
-
-// the value for declared but uninitialized values
-  private final Object UNINITIALIZED = new Object();
-
-
 //> Functions interpreter-constructor
   Interpreter() {
-    globals.put("clock", new LoxCallable() {
+    globals.define("clock", new LoxCallable() {
       @Override
       public int arity() { return 0; }
 
@@ -78,19 +72,6 @@ class Interpreter implements Expr.Visitor<Object>,
       Lox.runtimeError(error);
     }
   }
-
-  // Used to interpret an expression
-  String interpret(Expr expression) {
-    try {
-      Object value = evaluate(expression);
-      String str = stringify(value);
-      return str;
-    }
-    catch (RuntimeError error) {
-      Lox.runtimeError(error);
-      return null;
-    }
-  }
 //< Statements and State interpret
 //> evaluate
   private Object evaluate(Expr expr) {
@@ -103,9 +84,8 @@ class Interpreter implements Expr.Visitor<Object>,
   }
 //< Statements and State execute
 //> Resolving and Binding resolve
-  void resolve(Expr expr, int depth, int slot) {
+  void resolve(Expr expr, int depth) {
     locals.put(expr, depth);
-    slots.put(expr, slot);
   }
 //< Resolving and Binding resolve
 //> Statements and State execute-block
@@ -160,7 +140,7 @@ class Interpreter implements Expr.Visitor<Object>,
       LoxFunction function = new LoxFunction(method, environment);
 */
 //> interpreter-method-initializer
-      LoxFunction function = new LoxFunction(method.name.lexeme, method.function, environment,
+      LoxFunction function = new LoxFunction(method, environment,
           method.name.lexeme.equals("init"));
 //< interpreter-method-initializer
       methods.put(method.name.lexeme, function);
@@ -184,8 +164,7 @@ class Interpreter implements Expr.Visitor<Object>,
 /* Classes interpreter-visit-class < Classes interpret-methods
     LoxClass klass = new LoxClass(stmt.name.lexeme);
 */
-// IDK what to do with this. I'll ignore class definitions in my implementation of the index-based variables
-    // environment.assign(stmt.name, klass);
+    environment.assign(stmt.name, klass);
     return null;
   }
 //< Classes interpreter-visit-class
@@ -206,10 +185,10 @@ class Interpreter implements Expr.Visitor<Object>,
     LoxFunction function = new LoxFunction(stmt, environment);
 */
 //> Classes construct-function
-    LoxFunction function = new LoxFunction(stmt.name.lexeme, stmt.function, environment,
+    LoxFunction function = new LoxFunction(stmt, environment,
                                            false);
 //< Classes construct-function
-    define(stmt.name, function);
+    environment.define(stmt.name.lexeme, function);
     return null;
   }
 //< Functions visit-function
@@ -244,12 +223,12 @@ class Interpreter implements Expr.Visitor<Object>,
 //> Statements and State visit-var
   @Override
   public Void visitVarStmt(Stmt.Var stmt) {
-    Object value = UNINITIALIZED;
+    Object value = null;
     if (stmt.initializer != null) {
       value = evaluate(stmt.initializer);
     }
 
-    define(stmt.name, value);
+    environment.define(stmt.name.lexeme, value);
     return null;
   }
 //< Statements and State visit-var
@@ -273,14 +252,9 @@ class Interpreter implements Expr.Visitor<Object>,
 
     Integer distance = locals.get(expr);
     if (distance != null) {
-      environment.assignAt(distance, slots.get(expr), value);
+      environment.assignAt(distance, expr.name, value);
     } else {
-      if (globals.containsKey(expr.name.lexeme)) {
-        globals.put(expr.name.lexeme, value);
-      }
-      else {
-        throw new RuntimeError(expr.name, "Undefined variable '" + expr.name.lexeme + "'.");
-      }
+      globals.assign(expr.name, value);
     }
 
 //< Resolving and Binding resolved-assign
@@ -294,8 +268,6 @@ class Interpreter implements Expr.Visitor<Object>,
     Object right = evaluate(expr.right); // [left]
 
     switch (expr.operator.type) {
-// comma, assign rightmost
-      case COMMA: return right;
 //> binary-equality
       case BANG_EQUAL: return !isEqual(left, right);
       case EQUAL_EQUAL: return isEqual(left, right);
@@ -337,16 +309,6 @@ class Interpreter implements Expr.Visitor<Object>,
           return (String)left + (String)right;
         }
 
-        // ### MY CODE: Chapter 7 Challenge 2 ###
-        if (left instanceof String) {
-          return left + stringify(right);
-        }
-
-        if (right instanceof String) {
-          return stringify(left) + right;
-        }
-        // ## END OF MY CODE
-
 /* Evaluating Expressions binary-plus < Evaluating Expressions string-wrong-type
         break;
 */
@@ -358,11 +320,6 @@ class Interpreter implements Expr.Visitor<Object>,
       case SLASH:
 //> check-slash-operand
         checkNumberOperands(expr.operator, left, right);
-        // ### MY CODE: Chapter 7 Challenge 3 ###
-        if ((double)right == 0) {
-          throw new RuntimeError(expr.operator, "Division by 0 not allowed.");
-        }
-        // ### END OF MY CODE ###
 //< check-slash-operand
         return (double)left / (double)right;
       case STAR:
@@ -404,17 +361,7 @@ class Interpreter implements Expr.Visitor<Object>,
 //< check-arity
     return function.call(this, arguments);
   }
-@Override
-public Void visitTernaryExpr(Expr.Ternary expr) {
-  // Actual evaluation logic is out of scope for this chapter
-  return null;
-}
 //< Functions visit-call
-
-@Override 
-public Object visitFunctionExpr(Expr.Function expr) {
-  return new LoxFunction(null, expr, environment, false);
-}
 //> Classes interpreter-visit-get
   @Override
   public Object visitGetExpr(Expr.Get expr) {
@@ -473,11 +420,11 @@ public Object visitFunctionExpr(Expr.Function expr) {
   public Object visitSuperExpr(Expr.Super expr) {
     int distance = locals.get(expr);
     LoxClass superclass = (LoxClass)environment.getAt(
-        distance, slots.get("super"));
+        distance, "super");
 //> super-find-this
 
     LoxInstance object = (LoxInstance)environment.getAt(
-        distance - 1, slots.get("this"));
+        distance - 1, "this");
 //< super-find-this
 //> super-find-method
 
@@ -535,15 +482,9 @@ public Object visitFunctionExpr(Expr.Function expr) {
   private Object lookUpVariable(Token name, Expr expr) {
     Integer distance = locals.get(expr);
     if (distance != null) {
-      return environment.getAt(distance, slots.get(expr));
+      return environment.getAt(distance, name.lexeme);
     } else {
-      if (globals.containsKey(name.lexeme)) {
-        return globals.get(name.lexeme);
-      }
-      else {
-        throw new RuntimeError(name,
-            "Undefined variable '" + name.lexeme + "'.");
-      }
+      return globals.get(name);
     }
   }
 //< Resolving and Binding look-up-variable
@@ -592,11 +533,4 @@ public Object visitFunctionExpr(Expr.Function expr) {
     return object.toString();
   }
 //< stringify
-  private void define(Token name, Object value) {
-    if (environment != null) {
-      environment.define(name.lexeme, value);
-    } else {
-      globals.put(name.lexeme, value);
-    }
-  }
 }

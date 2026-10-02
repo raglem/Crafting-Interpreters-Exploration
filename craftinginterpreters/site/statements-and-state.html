@@ -201,7 +201,6 @@ in <em>main</em>()</div>
 <pre class="insert">
 
     <span class="i">defineAst</span>(<span class="i">outputDir</span>, <span class="s">&quot;Stmt&quot;</span>, <span class="t">Arrays</span>.<span class="i">asList</span>(
-      <span class="s">&quot;Break      : &quot;</span>,
       <span class="s">&quot;Expression : Expr expression&quot;</span>,
       <span class="s">&quot;Print      : Expr expression&quot;</span>
     ));
@@ -230,22 +229,6 @@ replace 7 lines</div>
 
     <span class="k">return</span> <span class="i">statements</span>;<span name="parse-error-handling"> </span>
   }
-
-  <span class="t">Object</span> <span class="i">parseRepl</span>() {
-    <span class="i">allowExpression</span> = <span class="k">true</span>;
-    <span class="t">List</span>&lt;<span class="t">Stmt</span>&gt; <span class="i">statements</span> = <span class="k">new</span> <span class="t">ArrayList</span>&lt;&gt;();
-    <span class="k">while</span> (!<span class="i">isAtEnd</span>()) {
-      <span class="i">statements</span>.<span class="i">add</span>(<span class="i">declaration</span>());
-
-      <span class="k">if</span> (<span class="i">foundExpression</span>) {
-        <span class="t">Stmt</span> <span class="i">last</span> = <span class="i">statements</span>.<span class="i">get</span>(<span class="i">statements</span>.<span class="i">size</span>() - <span class="n">1</span>);
-        <span class="k">return</span> ((<span class="t">Stmt</span>.<span class="t">Expression</span>) <span class="i">last</span>).<span class="i">expression</span>;
-      }
-
-      <span class="i">allowExpression</span> = <span class="k">false</span>;
-    }
-    <span class="k">return</span> <span class="i">statements</span>;
-  }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Parser.java</em>, method <em>parse</em>(), replace 7 lines</div>
 
@@ -272,7 +255,6 @@ this method:</p>
 add after <em>expression</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">Stmt</span> <span class="i">statement</span>() {
     <span class="k">if</span> (<span class="i">match</span>(<span class="i">PRINT</span>)) <span class="k">return</span> <span class="i">printStatement</span>();
-    <span class="k">if</span> (<span class="i">match</span>(<span class="i">BREAK</span>)) <span class="k">return</span> <span class="i">breakStatement</span>();
 
     <span class="k">return</span> <span class="i">expressionStatement</span>();
   }
@@ -302,22 +284,14 @@ do that here. We parse the subsequent expression, consume the terminating
 semicolon, and emit the syntax tree.</p>
 <p>If we didn&rsquo;t match a <code>print</code> statement, we must have one of these:</p>
 <div class="codehilite"><div class="source-file"><em>lox/Parser.java</em><br>
-add after <em>breakStatement</em>()</div>
+add after <em>printStatement</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">Stmt</span> <span class="i">expressionStatement</span>() {
     <span class="t">Expr</span> <span class="i">expr</span> = <span class="i">expression</span>();
-
-    <span class="c">// If the statement is actually an expression, we want to set the flag foundExpression to true</span>
-    <span class="c">// When parsing a REPL, we will return an expression instead of a list of statements</span>
-    <span class="k">if</span> (<span class="i">allowExpression</span> &amp;&amp; <span class="i">isAtEnd</span>()) {
-      <span class="i">foundExpression</span> = <span class="k">true</span>;
-    }
-    <span class="k">else</span> { <span class="c">// If not expression, it should be treated as statement</span>
-      <span class="i">consume</span>(<span class="i">SEMICOLON</span>, <span class="s">&quot;Expect &#39;;&#39; after expression.&quot;</span>);
-    }
+    <span class="i">consume</span>(<span class="i">SEMICOLON</span>, <span class="s">&quot;Expect &#39;;&#39; after expression.&quot;</span>);
     <span class="k">return</span> <span class="k">new</span> <span class="t">Stmt</span>.<span class="t">Expression</span>(<span class="i">expr</span>);
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Parser.java</em>, add after <em>breakStatement</em>()</div>
+<div class="source-file-narrow"><em>lox/Parser.java</em>, add after <em>printStatement</em>()</div>
 
 <p>Similar to the previous method, we parse an expression followed by a semicolon.
 We wrap that Expr in a Stmt of the right type and return it.</p>
@@ -332,7 +306,7 @@ implement since statements have their own base class.</p>
 replace 1 line</div>
 <pre class="insert"><span class="k">class</span> <span class="t">Interpreter</span> <span class="k">implements</span> <span class="t">Expr</span>.<span class="t">Visitor</span>&lt;<span class="t">Object</span>&gt;,
                              <span class="t">Stmt</span>.<span class="t">Visitor</span>&lt;<span class="t">Void</span>&gt; {
-</pre><pre class="insert-after">  private final Map&lt;Expr, Integer&gt; slots = new HashMap&lt;&gt;();
+</pre><pre class="insert-after">  void interpret(Expr expression) {<span name="void"> </span>
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, replace 1 line</div>
 
@@ -346,14 +320,14 @@ separate &ldquo;Void&rdquo; type specifically for this use. Sort of a &ldquo;box
 visit methods is Void, not Object. We have two statement types, and we need a
 visit method for each. The easiest is expression statements.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Interpreter.java</em><br>
-add after <em>visitBreakStmt</em>()</div>
+add after <em>evaluate</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitExpressionStmt</span>(<span class="t">Stmt</span>.<span class="t">Expression</span> <span class="i">stmt</span>) {
     <span class="i">evaluate</span>(<span class="i">stmt</span>.<span class="i">expression</span>);
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
-<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>visitBreakStmt</em>()</div>
+<div class="source-file-narrow"><em>lox/Interpreter.java</em>, add after <em>evaluate</em>()</div>
 
 <p>We evaluate the inner expression using our existing <code>evaluate()</code> method and
 <span name="discard">discard</span> the value. Then we return <code>null</code>. Java
@@ -391,19 +365,6 @@ replace 8 lines</div>
       }
     } <span class="k">catch</span> (<span class="t">RuntimeError</span> <span class="i">error</span>) {
       <span class="t">Lox</span>.<span class="i">runtimeError</span>(<span class="i">error</span>);
-    }
-  }
-
-  <span class="c">// Used to interpret an expression</span>
-  <span class="t">String</span> <span class="i">interpret</span>(<span class="t">Expr</span> <span class="i">expression</span>) {
-    <span class="k">try</span> {
-      <span class="t">Object</span> <span class="i">value</span> = <span class="i">evaluate</span>(<span class="i">expression</span>);
-      <span class="t">String</span> <span class="i">str</span> = <span class="i">stringify</span>(<span class="i">value</span>);
-      <span class="k">return</span> <span class="i">str</span>;
-    }
-    <span class="k">catch</span> (<span class="t">RuntimeError</span> <span class="i">error</span>) {
-      <span class="t">Lox</span>.<span class="i">runtimeError</span>(<span class="i">error</span>);
-      <span class="k">return</span> <span class="k">null</span>;
     }
   }
 </pre></div>
@@ -582,8 +543,7 @@ initializer expression. (If there isn&rsquo;t an initializer, that field is <cod
 </pre><div class="source-file"><em>tool/GenerateAst.java</em><br>
 in <em>main</em>()<br>
 add <em>&ldquo;,&rdquo;</em> to previous line</div>
-<pre class="insert">      <span class="s">&quot;Variable : Token name&quot;</span>,
-      <span class="s">&quot;Ternary : Expr condition, Expr thenExpr, Expr elseExpr&quot;</span>
+<pre class="insert">      <span class="s">&quot;Variable : Token name&quot;</span>
 </pre><pre class="insert-after">    ));
 </pre></div>
 <div class="source-file-narrow"><em>tool/GenerateAst.java</em>, in <em>main</em>(), add <em>&ldquo;,&rdquo;</em> to previous line</div>
@@ -671,9 +631,8 @@ required semicolon at the end of the statement. All this gets wrapped in a
 Stmt.Var syntax tree node and we&rsquo;re groovy.</p>
 <p>Parsing a variable expression is even easier. In <code>primary()</code>, we look for an
 identifier token.</p>
-<div class="codehilite"><pre class="insert-before">
-
-    if (match(FUN)) return functionBody(&quot;function&quot;);
+<div class="codehilite"><pre class="insert-before">      return new Expr.Literal(previous().literal);
+    }
 </pre><div class="source-file"><em>lox/Parser.java</em><br>
 in <em>primary</em>()</div>
 <pre class="insert">
@@ -714,12 +673,11 @@ known as <strong>scatter tables</strong>.</p>
 create new file</div>
 <pre><span class="k">package</span> <span class="i">com.craftinginterpreters.lox</span>;
 
-<span class="k">import</span> <span class="i">java.util.ArrayList</span>;
-<span class="k">import</span> <span class="i">java.util.List</span>;
+<span class="k">import</span> <span class="i">java.util.HashMap</span>;
+<span class="k">import</span> <span class="i">java.util.Map</span>;
 
 <span class="k">class</span> <span class="t">Environment</span> {
-  <span class="k">private</span> <span class="k">final</span> <span class="t">List</span>&lt;<span class="t">Object</span>&gt; <span class="i">values</span> = <span class="k">new</span> <span class="t">ArrayList</span>&lt;<span class="t">Object</span>&gt;();
-
+  <span class="k">private</span> <span class="k">final</span> <span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">Object</span>&gt; <span class="i">values</span> = <span class="k">new</span> <span class="t">HashMap</span>&lt;&gt;();
 }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Environment.java</em>, create new file</div>
@@ -734,7 +692,7 @@ a new name to a value.</p>
 <div class="codehilite"><div class="source-file"><em>lox/Environment.java</em><br>
 in class <em>Environment</em></div>
 <pre>  <span class="t">void</span> <span class="i">define</span>(<span class="t">String</span> <span class="i">name</span>, <span class="t">Object</span> <span class="i">value</span>) {
-    <span class="i">values</span>.<span class="i">add</span>(<span class="i">value</span>);
+    <span class="i">values</span>.<span class="i">put</span>(<span class="i">name</span>, <span class="i">value</span>);
   }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Environment.java</em>, in class <em>Environment</em></div>
@@ -766,7 +724,25 @@ footsteps.</p>
 <p>Scheme allows redefining variables at the top level.</p>
 </aside>
 <p>So, to keep the two modes consistent, we&rsquo;ll allow it<span class="em">&mdash;</span>at least for global
-variables. Once a variable exists, we need a way to look it up.</p><strong>ERROR: Missing snippet environment-get</strong>
+variables. Once a variable exists, we need a way to look it up.</p>
+<div class="codehilite"><pre class="insert-before">class Environment {
+  private final Map&lt;String, Object&gt; values = new HashMap&lt;&gt;();
+</pre><div class="source-file"><em>lox/Environment.java</em><br>
+in class <em>Environment</em></div>
+<pre class="insert">
+
+  <span class="t">Object</span> <span class="i">get</span>(<span class="t">Token</span> <span class="i">name</span>) {
+    <span class="k">if</span> (<span class="i">values</span>.<span class="i">containsKey</span>(<span class="i">name</span>.<span class="i">lexeme</span>)) {
+      <span class="k">return</span> <span class="i">values</span>.<span class="i">get</span>(<span class="i">name</span>.<span class="i">lexeme</span>);
+    }
+
+    <span class="k">throw</span> <span class="k">new</span> <span class="t">RuntimeError</span>(<span class="i">name</span>,
+        <span class="s">&quot;Undefined variable &#39;&quot;</span> + <span class="i">name</span>.<span class="i">lexeme</span> + <span class="s">&quot;&#39;.&quot;</span>);
+  }
+
+</pre><pre class="insert-after">  void define(String name, Object value) {
+</pre></div>
+<div class="source-file-narrow"><em>lox/Environment.java</em>, in class <em>Environment</em></div>
 
 <p>This is a little more semantically interesting. If the variable is found, it
 simply returns the value bound to it. But what if it&rsquo;s not? Again, we have a
@@ -845,8 +821,7 @@ tell the user where in their code they messed up.</p>
 in class <em>Interpreter</em></div>
 <pre class="insert">  <span class="k">private</span> <span class="t">Environment</span> <span class="i">environment</span> = <span class="k">new</span> <span class="t">Environment</span>();
 
-</pre><pre class="insert-after">
-
+</pre><pre class="insert-after">  void interpret(List&lt;Stmt&gt; statements) {
 </pre></div>
 <div class="source-file-narrow"><em>lox/Interpreter.java</em>, in class <em>Interpreter</em></div>
 
@@ -858,12 +833,12 @@ declaration statements.</p>
 add after <em>visitPrintStmt</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitVarStmt</span>(<span class="t">Stmt</span>.<span class="t">Var</span> <span class="i">stmt</span>) {
-    <span class="t">Object</span> <span class="i">value</span> = <span class="i">UNINITIALIZED</span>;
+    <span class="t">Object</span> <span class="i">value</span> = <span class="k">null</span>;
     <span class="k">if</span> (<span class="i">stmt</span>.<span class="i">initializer</span> != <span class="k">null</span>) {
       <span class="i">value</span> = <span class="i">evaluate</span>(<span class="i">stmt</span>.<span class="i">initializer</span>);
     }
 
-    <span class="i">define</span>(<span class="i">stmt</span>.<span class="i">name</span>, <span class="i">value</span>);
+    <span class="i">environment</span>.<span class="i">define</span>(<span class="i">stmt</span>.<span class="i">name</span>.<span class="i">lexeme</span>, <span class="i">value</span>);
     <span class="k">return</span> <span class="k">null</span>;
   }
 </pre></div>
@@ -962,7 +937,7 @@ rule.</p>
 </pre><div class="source-file"><em>lox/Parser.java</em><br>
 in <em>expression</em>()<br>
 replace 1 line</div>
-<pre class="insert">    <span class="k">return</span> <span class="i">comma</span>();
+<pre class="insert">    <span class="k">return</span> <span class="i">assignment</span>();
 </pre><pre class="insert-after">  }
 </pre></div>
 <div class="source-file-narrow"><em>lox/Parser.java</em>, in <em>expression</em>(), replace 1 line</div>
@@ -1090,7 +1065,20 @@ add after <em>visitVarStmt</em>()</div>
 
 <p>For obvious reasons, it&rsquo;s similar to variable declaration. It evaluates the
 right-hand side to get the value, then stores it in the named variable. Instead
-of using <code>define()</code> on Environment, it calls this new method:</p><strong>ERROR: Missing snippet environment-assign</strong>
+of using <code>define()</code> on Environment, it calls this new method:</p>
+<div class="codehilite"><div class="source-file"><em>lox/Environment.java</em><br>
+add after <em>get</em>()</div>
+<pre>  <span class="t">void</span> <span class="i">assign</span>(<span class="t">Token</span> <span class="i">name</span>, <span class="t">Object</span> <span class="i">value</span>) {
+    <span class="k">if</span> (<span class="i">values</span>.<span class="i">containsKey</span>(<span class="i">name</span>.<span class="i">lexeme</span>)) {
+      <span class="i">values</span>.<span class="i">put</span>(<span class="i">name</span>.<span class="i">lexeme</span>, <span class="i">value</span>);
+      <span class="k">return</span>;
+    }
+
+    <span class="k">throw</span> <span class="k">new</span> <span class="t">RuntimeError</span>(<span class="i">name</span>,
+        <span class="s">&quot;Undefined variable &#39;&quot;</span> + <span class="i">name</span>.<span class="i">lexeme</span> + <span class="s">&quot;&#39;.&quot;</span>);
+  }
+</pre></div>
+<div class="source-file-narrow"><em>lox/Environment.java</em>, add after <em>get</em>()</div>
 
 <p>The key difference between assignment and definition is that assignment is not
 <span name="new">allowed</span> to create a <em>new</em> variable. In terms of our
@@ -1261,7 +1249,7 @@ its enclosing one.</p>
 </pre><div class="source-file"><em>lox/Environment.java</em><br>
 in class <em>Environment</em></div>
 <pre class="insert">  <span class="k">final</span> <span class="t">Environment</span> <span class="i">enclosing</span>;
-</pre><pre class="insert-after">  private final List&lt;Object&gt; values = new ArrayList&lt;Object&gt;();
+</pre><pre class="insert-after">  private final Map&lt;String, Object&gt; values = new HashMap&lt;&gt;();
 </pre></div>
 <div class="source-file-narrow"><em>lox/Environment.java</em>, in class <em>Environment</em></div>
 
@@ -1284,7 +1272,20 @@ given outer one.</p>
 <p>We don&rsquo;t have to touch the <code>define()</code> method<span class="em">&mdash;</span>a new variable is always
 declared in the current innermost scope. But variable lookup and assignment work
 with existing variables and they need to walk the chain to find them. First,
-lookup:</p><strong>ERROR: Missing snippet environment-get-enclosing</strong>
+lookup:</p>
+<div class="codehilite"><pre class="insert-before">      return values.get(name.lexeme);
+    }
+</pre><div class="source-file"><em>lox/Environment.java</em><br>
+in <em>get</em>()</div>
+<pre class="insert">
+
+    <span class="k">if</span> (<span class="i">enclosing</span> != <span class="k">null</span>) <span class="k">return</span> <span class="i">enclosing</span>.<span class="i">get</span>(<span class="i">name</span>);
+</pre><pre class="insert-after">
+
+    throw new RuntimeError(name,
+        &quot;Undefined variable '&quot; + name.lexeme + &quot;'.&quot;);
+</pre></div>
+<div class="source-file-narrow"><em>lox/Environment.java</em>, in <em>get</em>()</div>
 
 <p>If the variable isn&rsquo;t found in this environment, we simply try the enclosing
 one. That in turn does the same thing <span name="recurse">recursively</span>,
@@ -1295,7 +1296,21 @@ an error as before.</p>
 <aside name="recurse">
 <p>It&rsquo;s likely faster to iteratively walk the chain, but I think the recursive
 solution is prettier. We&rsquo;ll do something <em>much</em> faster in clox.</p>
-</aside><strong>ERROR: Missing snippet environment-assign-enclosing</strong>
+</aside>
+<div class="codehilite"><pre class="insert-before">      values.put(name.lexeme, value);
+      return;
+    }
+
+</pre><div class="source-file"><em>lox/Environment.java</em><br>
+in <em>assign</em>()</div>
+<pre class="insert">    <span class="k">if</span> (<span class="i">enclosing</span> != <span class="k">null</span>) {
+      <span class="i">enclosing</span>.<span class="i">assign</span>(<span class="i">name</span>, <span class="i">value</span>);
+      <span class="k">return</span>;
+    }
+
+</pre><pre class="insert-after">    throw new RuntimeError(name,
+</pre></div>
+<div class="source-file-narrow"><em>lox/Environment.java</em>, in <em>assign</em>()</div>
 
 <p>Again, if the variable isn&rsquo;t in this environment, it checks the outer one,
 recursively.</p>
@@ -1315,7 +1330,7 @@ is allowed. The <span name="block-ast">syntax tree</span> node looks like this:<
 </pre><div class="source-file"><em>tool/GenerateAst.java</em><br>
 in <em>main</em>()</div>
 <pre class="insert">      <span class="s">&quot;Block      : List&lt;Stmt&gt; statements&quot;</span>,
-</pre><pre class="insert-after">      &quot;Break      : &quot;,
+</pre><pre class="insert-after">      &quot;Expression : Expr expression&quot;,
 </pre></div>
 <div class="source-file-narrow"><em>tool/GenerateAst.java</em>, in <em>main</em>()</div>
 
@@ -1329,7 +1344,7 @@ beginning of a block by its leading token<span class="em">&mdash;</span>in this 
 <aside name="generate">
 <p>As always, don&rsquo;t forget to run &ldquo;GenerateAst.java&rdquo;.</p>
 </aside>
-<div class="codehilite"><pre class="insert-before">    if (match(BREAK)) return breakStatement();
+<div class="codehilite"><pre class="insert-before">    if (match(PRINT)) return printStatement();
 </pre><div class="source-file"><em>lox/Parser.java</em><br>
 in <em>statement</em>()</div>
 <pre class="insert">    <span class="k">if</span> (<span class="i">match</span>(<span class="i">LEFT_BRACE</span>)) <span class="k">return</span> <span class="k">new</span> <span class="t">Stmt</span>.<span class="t">Block</span>(<span class="i">block</span>());
@@ -1352,33 +1367,6 @@ add after <em>expressionStatement</em>()</div>
     <span class="i">consume</span>(<span class="i">RIGHT_BRACE</span>, <span class="s">&quot;Expect &#39;}&#39; after block.&quot;</span>);
     <span class="k">return</span> <span class="i">statements</span>;
   }
-  <span class="c">// ### MY CODE - Chapter 6 Challenge 1 ###</span>
-  <span class="k">private</span> <span class="t">Expr</span> <span class="i">comma</span>() {
-    <span class="t">Expr</span> <span class="i">expr</span> = <span class="i">ternary</span>();
-
-    <span class="k">while</span> (<span class="i">match</span>(<span class="i">COMMA</span>)) {
-      <span class="t">Token</span> <span class="i">operator</span> = <span class="i">previous</span>();
-      <span class="t">Expr</span> <span class="i">right</span> = <span class="i">ternary</span>();
-      <span class="i">expr</span> = <span class="k">new</span> <span class="t">Expr</span>.<span class="t">Binary</span>(<span class="i">expr</span>, <span class="i">operator</span>, <span class="i">right</span>);
-    }
-    <span class="k">return</span> <span class="i">expr</span>;
-  }
-  <span class="c">// ### END OF MY CODE ###</span>
-
-  <span class="c">// ### MY CODE - Chapter 6 Challenge 2 ###</span>
-  <span class="k">private</span> <span class="t">Expr</span> <span class="i">ternary</span>() {
-    <span class="t">Expr</span> <span class="i">expr</span> = <span class="i">assignment</span>();
-
-    <span class="k">if</span> (<span class="i">match</span>(<span class="i">QUESTION</span>)) {
-      <span class="t">Expr</span> <span class="i">thenExpr</span> = <span class="i">expression</span>();
-      <span class="i">consume</span>(<span class="i">COLON</span>, <span class="s">&quot;Expected &#39;:&#39; after ternary operator&quot;</span>);
-      <span class="t">Expr</span> <span class="i">elseExpr</span> = <span class="i">expression</span>();
-      <span class="i">expr</span> = <span class="k">new</span> <span class="t">Expr</span>.<span class="t">Ternary</span>(<span class="i">expr</span>, <span class="i">thenExpr</span>, <span class="i">elseExpr</span>);
-    }
-    <span class="k">return</span> <span class="i">expr</span>;
-  }
-  <span class="c">// ## END OF MY CODE ###</span>
-
 </pre></div>
 <div class="source-file-narrow"><em>lox/Parser.java</em>, add after <em>expressionStatement</em>()</div>
 
