@@ -1,14 +1,15 @@
-trait doggyTrait {
-  bark() {
-    print "bark";
+class Animal {
+  noise() {
+    print "I am an animal";
+    inner();
   }
 }
 
-class Dog with doggyTrait {
-  woof() {
+class Dog < Animal {
+  noise() {
     print "woof";
   }
 }
 
 var dog = Dog();
-dog.bark();
+dog.noise();

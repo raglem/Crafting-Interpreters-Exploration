@@ -40,6 +40,12 @@ class LoxFunction implements LoxCallable {
 //< lox-function-bind-with-initializer
   }
 //< Classes bind-instance
+  LoxFunction bind(LoxInstance instance, LoxFunction inner) {
+    Environment environment = new Environment(closure);
+    environment.define("this", instance);
+    environment.define("inner", inner);
+    return new LoxFunction(declaration, environment, isInitializer);
+  }
 //> function-to-string
   @Override
   public String toString() {

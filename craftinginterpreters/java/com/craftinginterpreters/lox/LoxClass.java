@@ -37,18 +37,18 @@ class LoxClass extends LoxInstance implements LoxCallable {
   }
 //< lox-class-methods
 //> lox-class-find-method
-  LoxFunction findMethod(String name) {
-    if (methods.containsKey(name)) {
-      return methods.get(name);
+  LoxFunction findMethod(LoxInstance instance, String name) {
+    LoxFunction method = null;
+    LoxClass klass = this;
+    while (klass != null) {
+      if (klass.methods.containsKey(name)) {
+        method = klass.methods.get(name).bind(instance, method);
+      }
+
+      klass = klass.superclass;
     }
 
-//> Inheritance find-method-recurse-superclass
-    if (superclass != null) {
-      return superclass.findMethod(name);
-    }
-
-//< Inheritance find-method-recurse-superclass
-    return null;
+    return method;
   }
 //< lox-class-find-method
 
@@ -62,9 +62,9 @@ class LoxClass extends LoxInstance implements LoxCallable {
                      List<Object> arguments) {
     LoxInstance instance = new LoxInstance(this);
 //> lox-class-call-initializer
-    LoxFunction initializer = findMethod("init");
+    LoxFunction initializer = findMethod(instance, "init");
     if (initializer != null) {
-      initializer.bind(instance).call(interpreter, arguments);
+      initializer.call(interpreter, arguments);
     }
 
 //< lox-class-call-initializer
@@ -77,7 +77,7 @@ class LoxClass extends LoxInstance implements LoxCallable {
     return 0;
 */
 //> lox-initializer-arity
-    LoxFunction initializer = findMethod("init");
+    LoxFunction initializer = findMethod(null, "init");
     if (initializer == null) return 0;
     return initializer.arity();
 //< lox-initializer-arity
