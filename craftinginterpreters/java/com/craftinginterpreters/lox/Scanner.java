@@ -27,8 +27,10 @@ class Scanner {
     keywords.put("return", RETURN);
     keywords.put("super",  SUPER);
     keywords.put("this",   THIS);
+    keywords.put("trait", TRAIT);
     keywords.put("true",   TRUE);
     keywords.put("var",    VAR);
+    keywords.put("with", WITH);
     keywords.put("while",  WHILE);
   }
 //< keyword-map

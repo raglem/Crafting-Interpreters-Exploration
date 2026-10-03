@@ -14,6 +14,7 @@ abstract class Stmt {
     R visitReturnStmt(Return stmt);
     R visitVarStmt(Var stmt);
     R visitWhileStmt(While stmt);
+    R visitTraitStmt(Trait stmt);
   }
 
   // Nested Stmt classes here...
@@ -36,11 +37,13 @@ abstract class Stmt {
     Class(Token name,
           Expr.Variable superclass,
           List<Stmt.Function> methods,
-          List<Stmt.Function> classMethods) {
+          List<Stmt.Function> classMethods,
+          List<Expr> traits) {
       this.name = name;
       this.superclass = superclass;
       this.methods = methods;
       this.classMethods = classMethods;
+      this.traits = traits;
     }
 
     @Override
@@ -52,6 +55,7 @@ abstract class Stmt {
     final Expr.Variable superclass;
     final List<Stmt.Function> methods;
     final List<Stmt.Function> classMethods;
+    final List<Expr> traits;
   }
 //< stmt-class
 //> stmt-expression
@@ -166,6 +170,24 @@ abstract class Stmt {
     final Stmt body;
   }
 //< stmt-while
+//> stmt-trait
+  static class Trait extends Stmt {
+    Trait(Token name, List<Expr> traits, List<Stmt.Function> methods) {
+      this.name = name;
+      this.traits = traits;
+      this.methods = methods;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitTraitStmt(this);
+    }
+
+    final Token name;
+    final List<Expr> traits;
+    final List<Stmt.Function> methods;
+  }
+//< stmt-trait
 
   abstract <R> R accept(Visitor<R> visitor);
 }

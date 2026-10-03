@@ -1,8 +1,14 @@
-class Dog {
-  bark {
-    return "bark";
+trait doggyTrait {
+  bark() {
+    print "bark";
+  }
+}
+
+class Dog with doggyTrait {
+  woof() {
+    print "woof";
   }
 }
 
 var dog = Dog();
-print dog.bark;
+dog.bark();

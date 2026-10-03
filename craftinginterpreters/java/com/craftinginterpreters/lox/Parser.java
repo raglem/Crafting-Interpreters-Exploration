@@ -66,6 +66,7 @@ class Parser {
       if (match(FUN)) return function("function");
 //< Functions match-fun
       if (match(VAR)) return varDeclaration();
+      if (match(TRAIT)) return traitDeclaration();
 
       return statement();
     } catch (ParseError error) {
@@ -84,6 +85,8 @@ class Parser {
       consume(IDENTIFIER, "Expect superclass name.");
       superclass = new Expr.Variable(previous());
     }
+
+    List<Expr> traits = withClause();
 
 //< Inheritance parse-superclass
     consume(LEFT_BRACE, "Expect '{' before class body.");
@@ -105,7 +108,7 @@ class Parser {
     return new Stmt.Class(name, methods);
 */
 //> Inheritance construct-class-ast
-    return new Stmt.Class(name, superclass, methods, classMethods);
+    return new Stmt.Class(name, superclass, methods, classMethods, traits);
 //< Inheritance construct-class-ast
   }
 //< Classes parse-class-declaration
@@ -284,6 +287,32 @@ class Parser {
 //< parse-body
   }
 //< Functions parse-function
+  private Stmt traitDeclaration() {
+    Token name = consume(IDENTIFIER, "Expect trait name.");
+
+    List<Expr> traits = withClause();
+
+    consume(LEFT_BRACE, "Expected '{' before trait body.");
+
+    List<Stmt.Function> methods = new ArrayList<>();
+    while (!check(RIGHT_BRACE) && !isAtEnd()) {
+      methods.add(function("method"));
+    }
+
+    consume(RIGHT_BRACE, "Expected '}' after trait body.");
+
+    return new Stmt.Trait(name, traits, methods);
+  }
+  private List<Expr> withClause() {
+    List<Expr> traits = new ArrayList<>();
+    if (match(WITH)) {
+      do {
+        consume(IDENTIFIER, "Expect name for trait.");
+        traits.add(new Expr.Variable(previous()));
+      } while (match(COMMA));
+    }
+    return traits;
+  }
 //> Statements and State block
   private List<Stmt> block() {
     List<Stmt> statements = new ArrayList<>();
