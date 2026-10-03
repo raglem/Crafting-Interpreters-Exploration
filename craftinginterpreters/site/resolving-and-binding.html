@@ -712,9 +712,11 @@ itself inside its own body.</p>
 add after <em>resolve</em>()</div>
 <pre>  <span class="k">private</span> <span class="t">void</span> <span class="i">resolveFunction</span>(<span class="t">Stmt</span>.<span class="t">Function</span> <span class="i">function</span>) {
     <span class="i">beginScope</span>();
-    <span class="k">for</span> (<span class="t">Token</span> <span class="i">param</span> : <span class="i">function</span>.<span class="i">params</span>) {
-      <span class="i">declare</span>(<span class="i">param</span>);
-      <span class="i">define</span>(<span class="i">param</span>);
+    <span class="k">if</span> (<span class="i">function</span>.<span class="i">params</span> != <span class="k">null</span>) {
+      <span class="k">for</span> (<span class="t">Token</span> <span class="i">param</span> : <span class="i">function</span>.<span class="i">params</span>) {
+        <span class="i">declare</span>(<span class="i">param</span>);
+        <span class="i">define</span>(<span class="i">param</span>);
+      }
     }
     <span class="i">resolve</span>(<span class="i">function</span>.<span class="i">body</span>);
     <span class="i">endScope</span>();

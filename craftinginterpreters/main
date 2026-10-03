@@ -1,7 +1,8 @@
 class Dog {
-  class bark() {
-    print "bark";
+  bark {
+    return "bark";
   }
 }
 
-Dog.bark();
+var dog = Dog();
+print dog.bark;

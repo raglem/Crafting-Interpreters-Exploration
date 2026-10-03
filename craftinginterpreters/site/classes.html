@@ -521,7 +521,13 @@ add after <em>visitCallExpr</em>()</div>
   <span class="k">public</span> <span class="t">Object</span> <span class="i">visitGetExpr</span>(<span class="t">Expr</span>.<span class="t">Get</span> <span class="i">expr</span>) {
     <span class="t">Object</span> <span class="i">object</span> = <span class="i">evaluate</span>(<span class="i">expr</span>.<span class="i">object</span>);
     <span class="k">if</span> (<span class="i">object</span> <span class="k">instanceof</span> <span class="t">LoxInstance</span>) {
-      <span class="k">return</span> ((<span class="t">LoxInstance</span>) <span class="i">object</span>).<span class="i">get</span>(<span class="i">expr</span>.<span class="i">name</span>);
+      <span class="t">Object</span> <span class="i">result</span> = ((<span class="t">LoxInstance</span>)<span class="i">object</span>).<span class="i">get</span>(<span class="i">expr</span>.<span class="i">name</span>);
+      <span class="k">if</span> (<span class="i">result</span> <span class="k">instanceof</span> <span class="t">LoxFunction</span> &amp;&amp;
+        ((<span class="t">LoxFunction</span>) <span class="i">result</span>).<span class="i">isGetter</span>()
+      ) {
+        <span class="i">result</span> = ((<span class="t">LoxFunction</span>) <span class="i">result</span>).<span class="i">call</span>(<span class="k">this</span>, <span class="k">null</span>);
+      }
+      <span class="k">return</span> <span class="i">result</span>;
     }
 
     <span class="k">throw</span> <span class="k">new</span> <span class="t">RuntimeError</span>(<span class="i">expr</span>.<span class="i">name</span>,

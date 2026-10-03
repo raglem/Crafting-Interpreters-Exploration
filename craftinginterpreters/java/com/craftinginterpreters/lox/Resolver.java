@@ -128,7 +128,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
       resolveFunction(method, FunctionType.METHOD);
       endScope();
     }
-    
+
 //< resolve-methods
 //> Inheritance end-super-scope
     if (stmt.superclass != null) endScope();
@@ -359,9 +359,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
 //< set-current-function
     beginScope();
-    for (Token param : function.params) {
-      declare(param);
-      define(param);
+    if (function.params != null) {
+      for (Token param : function.params) {
+        declare(param);
+        define(param);
+      }
     }
     resolve(function.body);
     endScope();
