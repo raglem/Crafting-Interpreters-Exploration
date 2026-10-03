@@ -440,6 +440,11 @@ class Parser {
       return new Expr.Unary(operator, right);
     }
 
+    if (match(TYPE)) {
+      Token name = consume(IDENTIFIER, "Expect variable name after 'type'");
+      return new Expr.Type(name);
+    }
+
 /* Parsing Expressions unary < Functions unary-call
     return primary();
 */

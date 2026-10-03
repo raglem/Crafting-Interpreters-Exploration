@@ -504,6 +504,17 @@ class Interpreter implements Expr.Visitor<Object>,
 //< super-find-method
   }
 //< Inheritance interpreter-visit-super
+  public Object visitTypeExpr(Expr.Type expr) {
+    Object value = lookUpVariable(expr.name, expr);
+    if (value == null)  return "nil";
+    if (value instanceof String)  return "string";
+    if (value instanceof Double)  return "number";
+    if (value instanceof Boolean) return "boolean";
+    if (value instanceof LoxClass)  return ((LoxClass)value).name + " (class)";
+    if (value instanceof LoxInstance) return ((LoxInstance)value).getClassName() + " (instance)";
+    if (value instanceof LoxFunction) return "function";
+    return "idk";
+  }
 //> Classes interpreter-visit-this
   @Override
   public Object visitThisExpr(Expr.This expr) {

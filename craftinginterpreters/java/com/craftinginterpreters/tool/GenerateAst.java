@@ -39,6 +39,7 @@ public class GenerateAst {
 //> Classes this-ast
       "This     : Token keyword",
 //< Classes this-ast
+      "Type     : Token name",
 /* Representing Code call-define-ast < Statements and State var-expr
       "Unary    : Token operator, Expr right"
 */

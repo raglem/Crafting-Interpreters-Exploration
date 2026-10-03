@@ -1,15 +1,5 @@
-class Animal {
-  noise() {
-    print "I am an animal";
-    inner();
-  }
-}
+class Dog {
 
-class Dog < Animal {
-  noise() {
-    print "woof";
-  }
 }
-
 var dog = Dog();
-dog.noise();
+print (type dog);
