@@ -1,2 +1,4 @@
-var x = 2 + 3;
-print x;
+for (var i = 0; i < 1000000000; i = i + 1) {
+    var x = -1;
+}
+print "done";
