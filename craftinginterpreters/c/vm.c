@@ -33,6 +33,7 @@ static Value clockNative(int argCount, Value* args) {
 //< Calls and Functions clock-native
 //> reset-stack
 static void resetStack() {
+  vm.current = 0;
   vm.stackTop = vm.stack;
 //> Calls and Functions reset-frame-count
   vm.frameCount = 0;
@@ -96,6 +97,8 @@ static void defineNative(const char* name, NativeFn function) {
 //< Calls and Functions define-native
 
 void initVM() {
+  vm.stack = NULL;
+  vm.capacity = 0;
 //> call-reset-stack
   resetStack();
 //< call-reset-stack
@@ -148,13 +151,21 @@ void freeVM() {
 }
 //> push
 void push(Value value) {
+  if (vm.capacity < vm.current + 1) {
+    int oldCapacity = vm.capacity;
+    vm.capacity = GROW_CAPACITY(oldCapacity);
+    vm.stack = GROW_ARRAY(Value, vm.stack, oldCapacity, vm.capacity);
+    vm.stackTop = vm.stack + vm.current;
+  }
   *vm.stackTop = value;
   vm.stackTop++;
+  vm.current++;
 }
 //< push
 //> pop
 Value pop() {
   vm.stackTop--;
+  vm.current--;
   return *vm.stackTop;
 }
 //< pop
