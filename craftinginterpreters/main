@@ -1,5 +1,2 @@
-class Dog {
-
-}
-var dog = Dog();
-print (type dog);
+var x = 2 + 3;
+print x;

@@ -102,6 +102,11 @@ typedef enum {
 //< Methods and Initializers method-op
 } OpCode;
 //< op-enum
+
+typedef struct {
+  int offset;
+  int line;
+} LineStart;
 //> chunk-struct
 
 typedef struct {
@@ -111,7 +116,9 @@ typedef struct {
 //< count-and-capacity
   uint8_t* code;
 //> chunk-lines
-  int* lines;
+  int lineCount;
+  int lineCapacity;
+  LineStart* lines;
 //< chunk-lines
 //> chunk-constants
   ValueArray constants;
@@ -134,5 +141,6 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line);
 //> add-constant-h
 int addConstant(Chunk* chunk, Value value);
 //< add-constant-h
+int getLine(Chunk* chunk, int instruction);
 
 #endif
