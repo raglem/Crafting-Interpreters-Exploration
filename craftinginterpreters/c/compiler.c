@@ -36,6 +36,7 @@ typedef struct {
 typedef enum {
   PREC_NONE,
   PREC_ASSIGNMENT,  // =
+  PREC_TERNARY,
   PREC_OR,          // or
   PREC_AND,         // and
   PREC_EQUALITY,    // == !=
@@ -700,6 +701,13 @@ static void or_(bool canAssign) {
   patchJump(endJump);
 }
 //< Jumping Back and Forth or
+static void conditional() {
+  parsePrecedence(PREC_TERNARY); // then-branch
+
+  consume(TOKEN_COLON, "Expect ':' after the then branch of a ternary operator.");
+
+  parsePrecedence(PREC_ASSIGNMENT); // else-branch
+}
 /* Strings parse-string < Global Variables string
 static void string() {
 */
