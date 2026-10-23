@@ -393,8 +393,9 @@ static void concatenate() {
   memcpy(chars, a->chars, a->length);
   memcpy(chars + a->length, b->chars, b->length);
   chars[length] = '\0';
+  ObjString* result = copyString(chars, length);
+  FREE_ARRAY(char, chars, length + 1);
 
-  ObjString* result = takeString(chars, length);
 //> Garbage Collection concatenate-pop
   pop();
   pop();

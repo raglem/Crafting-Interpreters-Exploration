@@ -123,10 +123,10 @@ typedef struct {
 struct ObjString {
   Obj obj;
   int length;
-  char* chars;
 //> Hash Tables obj-string-hash
   uint32_t hash;
 //< Hash Tables obj-string-hash
+  char chars[];
 };
 //< obj-string
 //> Closures obj-upvalue
@@ -197,9 +197,6 @@ ObjInstance* newInstance(ObjClass* klass);
 //> Calls and Functions new-native-h
 ObjNative* newNative(NativeFn function);
 //< Calls and Functions new-native-h
-//> take-string-h
-ObjString* takeString(char* chars, int length);
-//< take-string-h
 //> copy-string-h
 ObjString* copyString(const char* chars, int length);
 //> Closures new-upvalue-h
