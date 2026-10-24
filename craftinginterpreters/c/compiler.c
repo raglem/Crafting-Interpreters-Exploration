@@ -140,6 +140,9 @@ static Chunk* currentChunk() {
   return compilingChunk;
 }
 */
+
+Table stringConstants;
+
 //> Calls and Functions current-chunk
 
 static Chunk* currentChunk() {
@@ -412,8 +415,14 @@ static void parsePrecedence(Precedence precedence);
 //< Compiling Expressions forward-declarations
 //> Global Variables identifier-constant
 static uint8_t identifierConstant(Token* name) {
-  return makeConstant(OBJ_VAL(copyString(true, name->start,
-                                         name->length)));
+  ObjString* string = copyString(true, name->start, name->length);
+  Value indexValue;
+  if (tableGet(&stringConstants, OBJ_VAL(string), &indexValue)) {
+    return (uint8_t)AS_NUMBER(indexValue);
+  }
+  uint8_t index = makeConstant(OBJ_VAL(string));
+  tableSet(&stringConstants, OBJ_VAL(string), NUMBER_VAL((double)index));
+  return index;
 }
 //< Global Variables identifier-constant
 //> Local Variables identifiers-equal
@@ -1489,6 +1498,9 @@ ObjFunction* compile(const char* source) {
   parser.panicMode = false;
 
 //< init-parser-error
+
+  initTable(&stringConstants);
+
   advance();
 //< Compiling Expressions compile-chunk
 /* Compiling Expressions compile-chunk < Global Variables compile
@@ -1510,6 +1522,7 @@ ObjFunction* compile(const char* source) {
 */
 //> Calls and Functions call-end-compiler
   ObjFunction* function = endCompiler();
+  freeTable(&stringConstants);
   return parser.hadError ? NULL : function;
 //< Calls and Functions call-end-compiler
 }
