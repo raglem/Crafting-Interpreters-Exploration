@@ -26,10 +26,11 @@ typedef struct ObjString ObjString;
 //< qnan
 //> tags
 
-#define TAG_NIL   1 // 01.
-#define TAG_FALSE 2 // 10.
-#define TAG_TRUE  3 // 11.
-#define TAG_EMPTY 4
+#define TAG_NIL       1 // 01.
+#define TAG_FALSE     2 // 10.
+#define TAG_TRUE      3 // 11.
+#define TAG_EMPTY     4
+#define TAG_UNDEFINED 5
 //< tags
 
 typedef uint64_t Value;
@@ -44,6 +45,7 @@ typedef uint64_t Value;
 #define IS_EMPTY(value)     ((value) == EMPTY_VAL)
 //< empty-value
 //< is-nil
+#define IS_UNDEFINED(value) ((value) == UNDEFINED_VAL)
 #define IS_NUMBER(value)    (((value) & QNAN) != QNAN)
 //< is-number
 //> is-obj
@@ -75,6 +77,7 @@ typedef uint64_t Value;
 //> empty-value
 #define EMPTY_VAL       ((Value)(uint64_t)(QNAN | TAG_EMPTY))
 //< empty-value
+#define UNDEFINED_VAL   ((Value)(uint64_t)(QNAN | TAG_UNDEFINED))
 //< nil-val
 #define NUMBER_VAL(num) numToValue(num)
 //< number-val

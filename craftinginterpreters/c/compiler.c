@@ -420,7 +420,9 @@ static uint8_t identifierConstant(Token* name) {
   if (tableGet(&stringConstants, OBJ_VAL(string), &indexValue)) {
     return (uint8_t)AS_NUMBER(indexValue);
   }
-  uint8_t index = makeConstant(OBJ_VAL(string));
+  uint8_t index = (uint8_t)vm.globalValues.count;
+  writeValueArray(&vm.globalValues, UNDEFINED_VAL);
+  tableSet(&vm.globalNames, OBJ_VAL(string), NUMBER_VAL((double)index));
   tableSet(&stringConstants, OBJ_VAL(string), NUMBER_VAL((double)index));
   return index;
 }

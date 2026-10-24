@@ -252,7 +252,7 @@ static void markRoots() {
 //< mark-open-upvalues
 //> mark-globals
 
-  markTable(&vm.globals);
+  markTable(&vm.globalNames);
 //< mark-globals
 //> call-mark-compiler-roots
   markCompilerRoots();
