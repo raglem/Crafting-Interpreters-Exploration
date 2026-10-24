@@ -1,0 +1,25 @@
+// Updates
+var one = 1;
+var two = 2;
+var three = 3;
+var four = 4;
+var five = 5;
+var six = 6;
+var seven = 7;
+var eight = 8;
+var nine = 9;
+var ten = 10;
+
+var start = clock();
+var sum = 0;
+for (var i = 0; i < 500000; i = i + 1) {
+  sum = sum + one + two + three;
+  one = sum;
+  three = sum;
+  seven = sum;
+}
+
+print "Updates";
+print clock() - start;
+
+// Result: 0.066504

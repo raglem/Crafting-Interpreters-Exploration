@@ -1,0 +1,12 @@
+var start = clock();
+var sum = 0;
+for (var i = 0; i < 500000; i = i + 1) {
+  var one = 1;
+  var two = 2;
+  var three = 3;
+}
+
+print "Deletions";
+print clock() - start;
+
+// Result: 0.033338
