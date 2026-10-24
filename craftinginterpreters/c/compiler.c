@@ -310,7 +310,7 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
   current = compiler;
 //> Calls and Functions init-function-name
   if (type != TYPE_SCRIPT) {
-    current->function->name = copyString(parser.previous.start,
+    current->function->name = copyString(true, parser.previous.start,
                                          parser.previous.length);
   }
 //< Calls and Functions init-function-name
@@ -412,7 +412,7 @@ static void parsePrecedence(Precedence precedence);
 //< Compiling Expressions forward-declarations
 //> Global Variables identifier-constant
 static uint8_t identifierConstant(Token* name) {
-  return makeConstant(OBJ_VAL(copyString(name->start,
+  return makeConstant(OBJ_VAL(copyString(true, name->start,
                                          name->length)));
 }
 //< Global Variables identifier-constant
@@ -707,7 +707,7 @@ static void string() {
 //> Global Variables string
 static void string(bool canAssign) {
 //< Global Variables string
-  emitConstant(OBJ_VAL(copyString(parser.previous.start + 1,
+  emitConstant(OBJ_VAL(copyString(false, parser.previous.start + 1,
                                   parser.previous.length - 2)));
 }
 //< Strings parse-string

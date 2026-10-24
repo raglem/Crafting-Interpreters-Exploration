@@ -88,7 +88,7 @@ static void runtimeError(const char* format, ...) {
 //< Types of Values runtime-error
 //> Calls and Functions define-native
 static void defineNative(const char* name, NativeFn function) {
-  push(OBJ_VAL(copyString(name, (int)strlen(name))));
+  push(OBJ_VAL(copyString(true, name, (int)strlen(name))));
   push(OBJ_VAL(newNative(function)));
   tableSet(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
   pop();
@@ -127,7 +127,7 @@ void initVM() {
 //> null-init-string
   vm.initString = NULL;
 //< null-init-string
-  vm.initString = copyString("init", 4);
+  vm.initString = copyString(true, "init", 4);
 //< Methods and Initializers init-init-string
 //> Calls and Functions define-native-clock
 
@@ -393,7 +393,7 @@ static void concatenate() {
   memcpy(chars, a->chars, a->length);
   memcpy(chars + a->length, b->chars, b->length);
   chars[length] = '\0';
-  ObjString* result = copyString(chars, length);
+  ObjString* result = copyString(true, chars, length);
   FREE_ARRAY(char, chars, length + 1);
 
 //> Garbage Collection concatenate-pop

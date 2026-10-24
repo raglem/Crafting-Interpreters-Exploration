@@ -104,17 +104,22 @@ ObjNative* newNative(NativeFn function) {
 }
 //< Calls and Functions new-native
 
-static ObjString* allocateString(const char* chars, int length,
+static ObjString* allocateString(bool ownsChars, const char* chars, int length,
                                 uint32_t hash) {
-  ObjString* string = (ObjString*)allocateObject(
-    sizeof(ObjString) + length + 1, OBJ_STRING
-  );
+  ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
   string->length = length;
+  string->ownsChars = ownsChars;
   string->hash = hash;
-  memcpy(string->chars, chars, length);
-  string->chars[length] = '\0';
 
   push(OBJ_VAL(string));
+  if (ownsChars) {
+    string->chars = ALLOCATE(char, length + 1);
+    memcpy(string->chars, chars, length);
+    string->chars[length] = '\0';
+  } else {
+    // If this ObjString doesn't own the character array, just point back to original source
+    string->chars = (char*)chars;
+  }
   tableSet(&vm.strings, string, NIL_VAL);
   pop();
 
@@ -130,12 +135,12 @@ static uint32_t hashString(const char* key, int length) {
   return hash;
 }
 
-ObjString* copyString(const char* chars, int length) {
+ObjString* copyString(bool ownChars, const char* chars, int length) {
   uint32_t hash = hashString(chars, length);
   ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
   if (interned != NULL) return interned;
 
-  return allocateString(chars, length, hash);
+  return allocateString(ownChars, chars, length, hash);
 }
 
 //> Closures new-upvalue
@@ -197,7 +202,7 @@ void printObject(Value value) {
       break;
 //< Calls and Functions print-native
     case OBJ_STRING:
-      printf("%s", AS_CSTRING(value));
+      printf("%.*s", AS_STRING(value)->length, AS_CSTRING(value));
       break;
 //> Closures print-upvalue
     case OBJ_UPVALUE:
