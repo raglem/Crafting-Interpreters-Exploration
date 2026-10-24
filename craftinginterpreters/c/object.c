@@ -120,7 +120,7 @@ static ObjString* allocateString(bool ownsChars, const char* chars, int length,
     // If this ObjString doesn't own the character array, just point back to original source
     string->chars = (char*)chars;
   }
-  tableSet(&vm.strings, string, NIL_VAL);
+  tableSet(&vm.strings, OBJ_VAL(string), NIL_VAL);
   pop();
 
   return string;

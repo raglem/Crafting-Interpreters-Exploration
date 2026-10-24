@@ -29,6 +29,7 @@ typedef struct ObjString ObjString;
 #define TAG_NIL   1 // 01.
 #define TAG_FALSE 2 // 10.
 #define TAG_TRUE  3 // 11.
+#define TAG_EMPTY 4
 //< tags
 
 typedef uint64_t Value;
@@ -39,6 +40,9 @@ typedef uint64_t Value;
 //< is-bool
 //> is-nil
 #define IS_NIL(value)       ((value) == NIL_VAL)
+//> empty-value
+#define IS_EMPTY(value)     ((value) == EMPTY_VAL)
+//< empty-value
 //< is-nil
 #define IS_NUMBER(value)    (((value) & QNAN) != QNAN)
 //< is-number
@@ -68,6 +72,9 @@ typedef uint64_t Value;
 //< false-true-vals
 //> nil-val
 #define NIL_VAL         ((Value)(uint64_t)(QNAN | TAG_NIL))
+//> empty-value
+#define EMPTY_VAL       ((Value)(uint64_t)(QNAN | TAG_EMPTY))
+//< empty-value
 //< nil-val
 #define NUMBER_VAL(num) numToValue(num)
 //< number-val
@@ -101,8 +108,9 @@ typedef enum {
   VAL_NIL, // [user-types]
   VAL_NUMBER,
 //> Strings val-obj
-  VAL_OBJ
+  VAL_OBJ,
 //< Strings val-obj
+  VAL_EMPTY
 } ValueType;
 
 //< Types of Values value-type
@@ -129,6 +137,7 @@ typedef struct {
 //> Strings is-obj
 #define IS_OBJ(value)     ((value).type == VAL_OBJ)
 //< Strings is-obj
+#define IS_EMPTY(value)   ((value).type == VAL_EMPTY)
 //< Types of Values is-macros
 //> Types of Values as-macros
 
@@ -146,6 +155,7 @@ typedef struct {
 //> Strings obj-val
 #define OBJ_VAL(object)   ((Value){VAL_OBJ, {.obj = (Obj*)object}})
 //< Strings obj-val
+#define EMPTY_VAL         ((Value){VAL_EMPTY, {.number = 0}})
 //< Types of Values value-macros
 //> Optimization end-if-nan-boxing
 
@@ -171,5 +181,6 @@ void freeValueArray(ValueArray* array);
 //> print-value-h
 void printValue(Value value);
 //< print-value-h
+uint32_t hashValue(Value value);
 
 #endif
