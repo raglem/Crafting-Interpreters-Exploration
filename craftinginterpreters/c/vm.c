@@ -88,14 +88,9 @@ static void runtimeError(const char* format, ...) {
 //< Types of Values runtime-error
 //> Calls and Functions define-native
 static void defineNative(const char* name, NativeFn function) {
-  push(OBJ_VAL(copyString(true, name, (int)strlen(name))));
+  push(OBJ_VAL(copyString(name, (int)strlen(name))));
   push(OBJ_VAL(newNative(function)));
-
-  uint8_t index = (uint8_t)vm.globalValues.count;
-  writeValueArray(&vm.globalValues, vm.stack[1]);
-  tableSet(&vm.globalNames, vm.stack[0], index);
-  vm.globalValues.count += 1;
-
+  tableSet(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
   pop();
   pop();
 }
@@ -122,9 +117,7 @@ void initVM() {
 //< Garbage Collection init-gray-stack
 //> Global Variables init-globals
 
-  initTable(&vm.globalNames);
-  initValueArray(&vm.globalValues);
-
+  initTable(&vm.globals);
 //< Global Variables init-globals
 //> Hash Tables init-strings
   initTable(&vm.strings);
@@ -134,7 +127,7 @@ void initVM() {
 //> null-init-string
   vm.initString = NULL;
 //< null-init-string
-  vm.initString = copyString(true, "init", 4);
+  vm.initString = copyString("init", 4);
 //< Methods and Initializers init-init-string
 //> Calls and Functions define-native-clock
 
@@ -144,8 +137,7 @@ void initVM() {
 
 void freeVM() {
 //> Global Variables free-globals
-  freeTable(&vm.globalNames);
-  freeValueArray(&vm.globalValues);
+  freeTable(&vm.globals);
 //< Global Variables free-globals
 //> Hash Tables free-strings
   freeTable(&vm.strings);
@@ -243,7 +235,7 @@ static bool callValue(Value callee, int argCount) {
         vm.stackTop[-argCount - 1] = OBJ_VAL(newInstance(klass));
 //> Methods and Initializers call-init
         Value initializer;
-        if (tableGet(&klass->methods, OBJ_VAL(vm.initString),
+        if (tableGet(&klass->methods, vm.initString,
                      &initializer)) {
           return call(AS_CLOSURE(initializer), argCount);
 //> no-init-arity-error
@@ -286,7 +278,7 @@ static bool callValue(Value callee, int argCount) {
 static bool invokeFromClass(ObjClass* klass, ObjString* name,
                             int argCount) {
   Value method;
-  if (!tableGet(&klass->methods, OBJ_VAL(name), &method)) {
+  if (!tableGet(&klass->methods, name, &method)) {
     runtimeError("Undefined property '%s'.", name->chars);
     return false;
   }
@@ -308,7 +300,7 @@ static bool invoke(ObjString* name, int argCount) {
 //> invoke-field
 
   Value value;
-  if (tableGet(&instance->fields, OBJ_VAL(name), &value)) {
+  if (tableGet(&instance->fields, name, &value)) {
     vm.stackTop[-argCount - 1] = value;
     return callValue(value, argCount);
   }
@@ -320,7 +312,7 @@ static bool invoke(ObjString* name, int argCount) {
 //> Methods and Initializers bind-method
 static bool bindMethod(ObjClass* klass, ObjString* name) {
   Value method;
-  if (!tableGet(&klass->methods, OBJ_VAL(name), &method)) {
+  if (!tableGet(&klass->methods, name, &method)) {
     runtimeError("Undefined property '%s'.", name->chars);
     return false;
   }
@@ -376,7 +368,7 @@ static void closeUpvalues(Value* last) {
 static void defineMethod(ObjString* name) {
   Value method = peek(0);
   ObjClass* klass = AS_CLASS(peek(1));
-  tableSet(&klass->methods, OBJ_VAL(name), method);
+  tableSet(&klass->methods, name, method);
   pop();
 }
 //< Methods and Initializers define-method
@@ -401,7 +393,7 @@ static void concatenate() {
   memcpy(chars, a->chars, a->length);
   memcpy(chars + a->length, b->chars, b->length);
   chars[length] = '\0';
-  ObjString* result = copyString(true, chars, length);
+  ObjString* result = copyString(chars, length);
   FREE_ARRAY(char, chars, length + 1);
 
 //> Garbage Collection concatenate-pop
@@ -542,9 +534,10 @@ static InterpretResult run() {
 //< Local Variables interpret-set-local
 //> Global Variables interpret-get-global
       case OP_GET_GLOBAL: {
-        Value value = vm.globalValues.values[READ_BYTE()];
-        if (IS_UNDEFINED(value)) {
-          runtimeError("Undefined variable.");
+        ObjString* name = READ_STRING();
+        Value value;
+        if (!tableGet(&vm.globals, name, &value)) {
+          runtimeError("Undefined variable '%s'.", name->chars);
           return INTERPRET_RUNTIME_ERROR;
         }
         push(value);
@@ -553,18 +546,20 @@ static InterpretResult run() {
 //< Global Variables interpret-get-global
 //> Global Variables interpret-define-global
       case OP_DEFINE_GLOBAL: {
-        vm.globalValues.values[READ_BYTE()] = pop();
+        ObjString* name = READ_STRING();
+        tableSet(&vm.globals, name, peek(0));
+        pop();
         break;
       }
 //< Global Variables interpret-define-global
 //> Global Variables interpret-set-global
       case OP_SET_GLOBAL: {
-        uint8_t index = READ_BYTE();
-        if (IS_UNDEFINED(vm.globalValues.values[index])) {
-          runtimeError("Undefined variable.");
+        ObjString* name = READ_STRING();
+        if (tableSet(&vm.globals, name, peek(0))) {
+          tableDelete(&vm.globals, name); // [delete]
+          runtimeError("Undefined variable '%s'.", name->chars);
           return INTERPRET_RUNTIME_ERROR;
         }
-        vm.globalValues.values[index] = peek(0);
         break;
       }
 //< Global Variables interpret-set-global
@@ -595,7 +590,7 @@ static InterpretResult run() {
         ObjString* name = READ_STRING();
         
         Value value;
-        if (tableGet(&instance->fields, OBJ_VAL(name), &value)) {
+        if (tableGet(&instance->fields, name, &value)) {
           pop(); // Instance.
           push(value);
           break;
@@ -625,7 +620,7 @@ static InterpretResult run() {
 
 //< set-not-instance
         ObjInstance* instance = AS_INSTANCE(peek(1));
-        tableSet(&instance->fields, OBJ_VAL(READ_STRING()), peek(0));
+        tableSet(&instance->fields, READ_STRING(), peek(0));
         Value value = pop();
         pop();
         push(value);

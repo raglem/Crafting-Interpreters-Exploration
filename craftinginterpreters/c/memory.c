@@ -217,10 +217,7 @@ static void freeObject(Obj* object) {
 //< Calls and Functions free-native
     case OBJ_STRING: {
       ObjString* string = (ObjString*)object;
-      if (string->ownsChars) {
-        FREE_ARRAY(char, (char*)string->chars, string->length + 1);
-      }
-      FREE(ObjString, object);
+      reallocate(object, sizeof(ObjString) + string->length + 1, 0);
       break;
     }
 //> Closures free-upvalue
@@ -252,7 +249,7 @@ static void markRoots() {
 //< mark-open-upvalues
 //> mark-globals
 
-  markTable(&vm.globalNames);
+  markTable(&vm.globals);
 //< mark-globals
 //> call-mark-compiler-roots
   markCompilerRoots();

@@ -15,33 +15,6 @@
 //> A Virtual Machine main-include-vm
 #include "vm.h"
 //< A Virtual Machine main-include-vm
-typedef struct SourceBuffer {
-  char* source;
-  struct SourceBuffer* next;
-} SourceBuffer;
-
-static SourceBuffer* sourceBuffers = NULL;
-
-static void retainSource(char* source) {
-  SourceBuffer* buffer = (SourceBuffer*)malloc(sizeof(SourceBuffer));
-  if (buffer == NULL) {
-    fprintf(stderr, "Not enough memory to retain source.\n");
-    exit(74);
-  }
-  buffer->source = source;
-  buffer->next = sourceBuffers;
-  sourceBuffers = buffer;
-}
-
-static void freeSourceBuffers() {
-  SourceBuffer* buffer = sourceBuffers;
-  while (buffer != NULL) {
-    SourceBuffer* next = buffer->next;
-    free(buffer->source);
-    free(buffer);
-    buffer = next;
-  }
-}
 //> Scanning on Demand repl
 
 static void repl() {
@@ -54,15 +27,7 @@ static void repl() {
       break;
     }
 
-    size_t length = strlen(line);
-    char* source = (char*)malloc(length + 1);
-    if (source == NULL) {
-      fprintf(stderr, "Not enough memory to retain source.\n");
-      exit(74);
-    }
-    memcpy(source, line, length + 1);
-    retainSource(source);
-    interpret(source);
+    interpret(line);
   }
 }
 //< Scanning on Demand repl
@@ -105,8 +70,8 @@ static char* readFile(const char* path) {
 //> Scanning on Demand run-file
 static void runFile(const char* path) {
   char* source = readFile(path);
-  retainSource(source);
   InterpretResult result = interpret(source);
+  free(source); // [owner]
 
   if (result == INTERPRET_COMPILE_ERROR) exit(65);
   if (result == INTERPRET_RUNTIME_ERROR) exit(70);
@@ -177,7 +142,6 @@ int main(int argc, const char* argv[]) {
   }
   
   freeVM();
-  freeSourceBuffers();
 //< Scanning on Demand args
 /* A Virtual Machine main-free-vm < Scanning on Demand args
   freeVM();

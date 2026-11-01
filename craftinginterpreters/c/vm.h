@@ -57,8 +57,7 @@ typedef struct {
   Value* stackTop;
 //< vm-stack
 //> Global Variables vm-globals
-  Table globalNames;
-  ValueArray globalValues;
+  Table globals;
 //< Global Variables vm-globals
 //> Hash Tables vm-strings
   Table strings;

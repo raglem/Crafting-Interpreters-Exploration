@@ -13,8 +13,6 @@
 #include "memory.h"
 //< Garbage Collection compiler-include-memory
 #include "scanner.h"
-#include "value.h"
-#include "table.h"
 //> Compiling Expressions include-debug
 
 #ifdef DEBUG_PRINT_CODE
@@ -109,7 +107,6 @@ typedef struct Compiler {
 
 //< Calls and Functions function-fields
   Local locals[UINT8_COUNT];
-  Table localsTable;
   int localCount;
 //> Closures upvalues-array
   Upvalue upvalues[UINT8_COUNT];
@@ -143,9 +140,6 @@ static Chunk* currentChunk() {
   return compilingChunk;
 }
 */
-
-Table stringConstants;
-
 //> Calls and Functions current-chunk
 
 static Chunk* currentChunk() {
@@ -316,7 +310,7 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
   current = compiler;
 //> Calls and Functions init-function-name
   if (type != TYPE_SCRIPT) {
-    current->function->name = copyString(true, parser.previous.start,
+    current->function->name = copyString(parser.previous.start,
                                          parser.previous.length);
   }
 //< Calls and Functions init-function-name
@@ -339,10 +333,6 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
     local->name.start = "";
     local->name.length = 0;
   }
-
-  initTable(&current->localsTable);
-  ObjString* string = copyString(true, local->name.start, local->name.length);
-  tableSet(&current->localsTable, OBJ_VAL(string), NUMBER_VAL((double)current->localCount-1));
 //< Methods and Initializers slot-zero
 //< Calls and Functions init-function-slot
 }
@@ -373,8 +363,6 @@ static ObjFunction* endCompiler() {
 #endif
 //< dump-chunk
 //> Calls and Functions return-function
-
-  freeTable(&current->localsTable);
 
 //> restore-enclosing
   current = current->enclosing;
@@ -424,16 +412,8 @@ static void parsePrecedence(Precedence precedence);
 //< Compiling Expressions forward-declarations
 //> Global Variables identifier-constant
 static uint8_t identifierConstant(Token* name) {
-  ObjString* string = copyString(true, name->start, name->length);
-  Value indexValue;
-  if (tableGet(&stringConstants, OBJ_VAL(string), &indexValue)) {
-    return (uint8_t)AS_NUMBER(indexValue);
-  }
-  uint8_t index = (uint8_t)vm.globalValues.count;
-  writeValueArray(&vm.globalValues, UNDEFINED_VAL);
-  tableSet(&vm.globalNames, OBJ_VAL(string), NUMBER_VAL((double)index));
-  tableSet(&stringConstants, OBJ_VAL(string), NUMBER_VAL((double)index));
-  return index;
+  return makeConstant(OBJ_VAL(copyString(name->start,
+                                         name->length)));
 }
 //< Global Variables identifier-constant
 //> Local Variables identifiers-equal
@@ -444,13 +424,16 @@ static bool identifiersEqual(Token* a, Token* b) {
 //< Local Variables identifiers-equal
 //> Local Variables resolve-local
 static int resolveLocal(Compiler* compiler, Token* name) {
-  // No more iterating, we can directly reference the localsTable that contains the index in locals
-  ObjString* string = copyString(true, name->start, name->length);
-  Value result;
-  bool found = tableGet(&compiler->localsTable, OBJ_VAL(string), &result);
-
-  if (found && IS_NUMBER(result)) {
-    return AS_NUMBER(result);
+  for (int i = compiler->localCount - 1; i >= 0; i--) {
+    Local* local = &compiler->locals[i];
+    if (identifiersEqual(name, &local->name)) {
+//> own-initializer-error
+      if (local->depth == -1) {
+        error("Can't read local variable in its own initializer.");
+      }
+//< own-initializer-error
+      return i;
+    }
   }
 
   return -1;
@@ -524,9 +507,6 @@ static void addLocal(Token name) {
 //> Closures init-is-captured
   local->isCaptured = false;
 //< Closures init-is-captured
-  ObjString* string = copyString(true, local->name.start, local->name.length);
-  // Store the locals index of the local inside the localsTable to speed up #resolveLocal
-  tableSet(&current->localsTable, OBJ_VAL(string), NUMBER_VAL((double)current->localCount-1));
 }
 //< Local Variables add-local
 //> Local Variables declare-variable
@@ -727,7 +707,7 @@ static void string() {
 //> Global Variables string
 static void string(bool canAssign) {
 //< Global Variables string
-  emitConstant(OBJ_VAL(copyString(false, parser.previous.start + 1,
+  emitConstant(OBJ_VAL(copyString(parser.previous.start + 1,
                                   parser.previous.length - 2)));
 }
 //< Strings parse-string
@@ -1509,9 +1489,6 @@ ObjFunction* compile(const char* source) {
   parser.panicMode = false;
 
 //< init-parser-error
-
-  initTable(&stringConstants);
-
   advance();
 //< Compiling Expressions compile-chunk
 /* Compiling Expressions compile-chunk < Global Variables compile
@@ -1533,7 +1510,6 @@ ObjFunction* compile(const char* source) {
 */
 //> Calls and Functions call-end-compiler
   ObjFunction* function = endCompiler();
-  freeTable(&stringConstants);
   return parser.hadError ? NULL : function;
 //< Calls and Functions call-end-compiler
 }
