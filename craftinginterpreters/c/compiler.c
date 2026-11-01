@@ -141,6 +141,10 @@ ClassCompiler* currentClass = NULL;
 // We can perform a check inside of #namedVariable checking if the current variable exists witwhin
 Table globalVariables;
 
+// Stuff to track whether we're in a loop for the 'continue' keyword
+int currentLoopStart = -1;
+int currentLoopDepth = 0;
+
 /* Compiling Expressions compiling-chunk < Calls and Functions current-chunk
 Chunk* compilingChunk;
 
@@ -1271,6 +1275,23 @@ static void expressionStatement() {
   emitByte(OP_POP);
 }
 //< Global Variables expression-statement
+
+static void continueStatement() {
+  if (currentLoopStart == -1) {
+    error("Can't use a 'continue' when not inside a loop.");
+  }
+
+  consume(TOKEN_SEMICOLON, "Expect ';' after continue.");
+
+  // Get rid of the locals inside the current loop
+  for (int i = current->localCount-1; i >= 0 && currentLoopDepth < current->locals[i].depth; i--){
+    emitByte(OP_POP);
+  }
+
+  // Jump to top of next iteration
+  emitLoop(currentLoopStart);
+}
+
 //> Jumping Back and Forth for-statement
 static void forStatement() {
 //> for-begin-scope
@@ -1290,7 +1311,12 @@ static void forStatement() {
   }
 //< for-initializer
 
-  int loopStart = currentChunk()->count;
+  // Acclimate ourselves to where we are looping
+  int surroundingLoopStart = currentLoopStart;
+  int surroundingLoopDepth = currentLoopDepth;
+  currentLoopStart = currentChunk()->count;
+  currentLoopDepth = current->scopeDepth;
+
 /* Jumping Back and Forth for-statement < Jumping Back and Forth for-exit
   consume(TOKEN_SEMICOLON, "Expect ';'.");
 */
@@ -1317,14 +1343,14 @@ static void forStatement() {
     emitByte(OP_POP);
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
 
-    emitLoop(loopStart);
-    loopStart = incrementStart;
+    emitLoop(currentLoopStart);
+    currentLoopStart = incrementStart;
     patchJump(bodyJump);
   }
 //< for-increment
 
   statement();
-  emitLoop(loopStart);
+  emitLoop(currentLoopStart);
 //> exit-jump
 
   if (exitJump != -1) {
@@ -1333,6 +1359,11 @@ static void forStatement() {
   }
 
 //< exit-jump
+
+  // Go back up to the surrounding loop/place
+  currentLoopStart = surroundingLoopStart;
+  currentLoopDepth = surroundingLoopDepth;
+
 //> for-end-scope
   endScope();
 //< for-end-scope
@@ -1544,6 +1575,8 @@ static void statement() {
   if (match(TOKEN_PRINT)) {
     printStatement();
 //> Jumping Back and Forth parse-for
+  } else if (match(TOKEN_CONTINUE)) {
+    continueStatement();
   } else if (match(TOKEN_FOR)) {
     forStatement();
 //< Jumping Back and Forth parse-for
