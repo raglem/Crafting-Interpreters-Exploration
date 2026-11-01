@@ -13,6 +13,7 @@
 #include "memory.h"
 //< Garbage Collection compiler-include-memory
 #include "scanner.h"
+#include "table.h"
 //> Compiling Expressions include-debug
 
 #ifdef DEBUG_PRINT_CODE
@@ -72,6 +73,7 @@ typedef struct {
 //> Closures is-captured-field
   bool isCaptured;
 //< Closures is-captured-field
+  bool isFinal;
 } Local;
 //< Local Variables local-struct
 //> Closures upvalue-struct
@@ -133,8 +135,15 @@ Compiler* current = NULL;
 ClassCompiler* currentClass = NULL;
 //< Methods and Initializers current-class
 //> Compiling Expressions compiling-chunk
+
+// Since global vars work different and we can't directly change the metadata info of a global variable like local (Local struct),
+// we will use this table as a hash set to signify any global variables.
+// We can perform a check inside of #namedVariable checking if the current variable exists witwhin
+Table globalVariables;
+
 /* Compiling Expressions compiling-chunk < Calls and Functions current-chunk
 Chunk* compilingChunk;
+
 
 static Chunk* currentChunk() {
   return compilingChunk;
@@ -335,6 +344,7 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
   }
 //< Methods and Initializers slot-zero
 //< Calls and Functions init-function-slot
+  initTable(&globalVariables);
 }
 //< Local Variables init-compiler
 //> Compiling Expressions end-compiler
@@ -367,6 +377,7 @@ static ObjFunction* endCompiler() {
 //> restore-enclosing
   current = current->enclosing;
 //< restore-enclosing
+  freeTable(&globalVariables);
   return function;
 //< Calls and Functions return-function
 }
@@ -416,6 +427,14 @@ static uint8_t identifierConstant(Token* name) {
                                          name->length)));
 }
 //< Global Variables identifier-constant
+
+static bool isFinalGlobal(Token* name) {
+  ObjString* string = copyString(name->start, name->length);
+  Value finalFlag;
+  // Return the function directly since we wouldn't add a non-final variable to globalVariables
+  return tableGet(&globalVariables, string, &finalFlag);
+}
+
 //> Local Variables identifiers-equal
 static bool identifiersEqual(Token* a, Token* b) {
   if (a->length != b->length) return false;
@@ -488,7 +507,7 @@ static int resolveUpvalue(Compiler* compiler, Token* name) {
 }
 //< Closures resolve-upvalue
 //> Local Variables add-local
-static void addLocal(Token name) {
+static void addLocal(Token name, bool final) {
 //> too-many-locals
   if (current->localCount == UINT8_COUNT) {
     error("Too many local variables in function.");
@@ -507,10 +526,11 @@ static void addLocal(Token name) {
 //> Closures init-is-captured
   local->isCaptured = false;
 //< Closures init-is-captured
+  local->isFinal = final;
 }
 //< Local Variables add-local
 //> Local Variables declare-variable
-static void declareVariable() {
+static void declareVariable(bool final) {
   if (current->scopeDepth == 0) return;
 
   Token* name = &parser.previous;
@@ -527,19 +547,30 @@ static void declareVariable() {
   }
 
 //< existing-in-scope
-  addLocal(*name);
+  addLocal(*name, final);
 }
 //< Local Variables declare-variable
 //> Global Variables parse-variable
 static uint8_t parseVariable(const char* errorMessage) {
+  bool final = false;
+  if (match(TOKEN_FINAL)) {
+    final = true;
+  }
+
   consume(TOKEN_IDENTIFIER, errorMessage);
 //> Local Variables parse-local
 
-  declareVariable();
+  declareVariable(final);
   if (current->scopeDepth > 0) return 0;
 
 //< Local Variables parse-local
-  return identifierConstant(&parser.previous);
+  uint8_t global = identifierConstant(&parser.previous);
+  if (final) {
+    ObjString* string = copyString(parser.previous.start,
+                                   parser.previous.length);
+    tableSet(&globalVariables, string, BOOL_VAL(true));
+  }
+  return global;
 }
 //< Global Variables parse-variable
 //> Local Variables mark-initialized
@@ -724,9 +755,11 @@ static void namedVariable(Token name, bool canAssign) {
 //> Local Variables named-local
   uint8_t getOp, setOp;
   int arg = resolveLocal(current, &name);
+  bool isFinal = false;
   if (arg != -1) {
     getOp = OP_GET_LOCAL;
     setOp = OP_SET_LOCAL;
+    isFinal = current->locals[arg].isFinal;
 //> Closures named-variable-upvalue
   } else if ((arg = resolveUpvalue(current, &name)) != -1) {
     getOp = OP_GET_UPVALUE;
@@ -736,7 +769,9 @@ static void namedVariable(Token name, bool canAssign) {
     arg = identifierConstant(&name);
     getOp = OP_GET_GLOBAL;
     setOp = OP_SET_GLOBAL;
+    isFinal = isFinalGlobal(&name);
   }
+  
 //< Local Variables named-local
 /* Global Variables read-named-variable < Global Variables named-variable
   emitBytes(OP_GET_GLOBAL, arg);
@@ -748,6 +783,11 @@ static void namedVariable(Token name, bool canAssign) {
 */
 //> named-variable-can-assign
   if (canAssign && match(TOKEN_EQUAL)) {
+
+    // Throw error if variable was initialzied as final and now we're attempting to reassign
+    if (isFinal) {
+      error("Variable declared with 'final' cannot be modified.");
+    }
 //< named-variable-can-assign
     expression();
 /* Global Variables named-variable < Local Variables emit-set
@@ -1114,7 +1154,7 @@ static void classDeclaration() {
   Token className = parser.previous;
 //< Methods and Initializers class-name
   uint8_t nameConstant = identifierConstant(&parser.previous);
-  declareVariable();
+  declareVariable(false);
 
   emitBytes(OP_CLASS, nameConstant);
   defineVariable(nameConstant);
@@ -1141,7 +1181,7 @@ static void classDeclaration() {
 //< inherit-self
 //> superclass-variable
     beginScope();
-    addLocal(syntheticToken("super"));
+    addLocal(syntheticToken("super"), false);
     defineVariable(0);
     
 //< superclass-variable
