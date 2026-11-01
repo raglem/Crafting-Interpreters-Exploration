@@ -1017,6 +1017,7 @@ ParseRule rules[] = {
 /* Compiling Expressions rules < Superclasses table-super
   [TOKEN_SUPER]         = {NULL,     NULL,   PREC_NONE},
 */
+  [TOKEN_SWITCH]        = {NULL,     NULL,   PREC_NONE},
 //> Superclasses table-super
   [TOKEN_SUPER]         = {super_,   NULL,   PREC_NONE},
 //< Superclasses table-super
@@ -1416,6 +1417,71 @@ static void whileStatement() {
   emitByte(OP_POP);
 }
 //< Jumping Back and Forth while-statement
+static void switchStatement() {
+  beginScope();
+
+  // The switch expression
+  consume(TOKEN_LEFT_PAREN, "Expect '(' after 'switch'.");
+  expression();
+  consume(TOKEN_RIGHT_PAREN, "Expect ')' after switch condition.");
+
+  consume(TOKEN_LEFT_BRACE, "Expect '{' before switch body.");
+
+  // Store the switch expr in a hidden variable to compare against case exprs
+  Token switchExpr;
+  switchExpr.start = NULL;
+  switchExpr.length = 0;
+  addLocal(switchExpr, false);
+  markInitialized();
+  int switchSlot = current->localCount - 1;
+
+  int endJumpCount = 0;
+  int endJumpCapacity = 0;
+  int* endJumps = NULL;
+
+  while(match(TOKEN_CASE)) {
+    // Get the switch expr to top of stack
+    emitByte(OP_GET_LOCAL);
+    emitDoubleBytes((uint16_t)switchSlot);
+
+    expression();
+    consume(TOKEN_COLON, "Expect ':' after case expression.");
+
+    // Evaluate equality between switch expr and current case expr
+    emitByte(OP_EQUAL);
+
+    // Create a jump operation depending on whether the previous expression was false
+    int caseJump = emitJump(OP_JUMP_IF_FALSE);
+    emitByte(OP_POP);
+
+    statement();
+    if (endJumpCapacity < endJumpCount + 1) {
+      int oldCapacity = endJumpCapacity;
+      endJumpCapacity = GROW_CAPACITY(oldCapacity);
+      endJumps = GROW_ARRAY(int, endJumps, oldCapacity, endJumpCapacity);
+    }
+    // If the VM does get here, we jump to the end of the switch statement
+    // We use array endJumps for each case to figure out the right offset
+    endJumps[endJumpCount++] = emitJump(OP_JUMP);
+
+    // When the case is not true, we jump here and skip the current case
+    patchJump(caseJump);
+    emitByte(OP_POP);
+  }
+
+  if (match(TOKEN_DEFAULT)) {
+    consume(TOKEN_COLON, "Expect ':' after 'default'.");
+    statement();
+  }
+
+  consume(TOKEN_RIGHT_BRACE, "Expect '}' after switch body.");
+
+  for (int i = 0; i < endJumpCount; i++) {
+    patchJump(endJumps[i]);
+  }
+  FREE_ARRAY(int, endJumps, endJumpCapacity);
+  endScope();
+}
 //> Global Variables synchronize
 static void synchronize() {
   parser.panicMode = false;
@@ -1489,6 +1555,8 @@ static void statement() {
   } else if (match(TOKEN_RETURN)) {
     returnStatement();
 //< Calls and Functions match-return
+  } else if (match(TOKEN_SWITCH)) {
+    switchStatement();
 //> Jumping Back and Forth parse-while
   } else if (match(TOKEN_WHILE)) {
     whileStatement();
