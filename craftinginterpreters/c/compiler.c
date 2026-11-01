@@ -108,7 +108,7 @@ typedef struct Compiler {
   FunctionType type;
 
 //< Calls and Functions function-fields
-  Local locals[UINT8_COUNT];
+  Local locals[UINT16_COUNT];
   int localCount;
 //> Closures upvalues-array
   Upvalue upvalues[UINT8_COUNT];
@@ -235,6 +235,14 @@ static void emitBytes(uint8_t byte1, uint8_t byte2) {
   emitByte(byte2);
 }
 //< Compiling Expressions emit-bytes
+
+static void emitDoubleBytes(uint16_t doubleByte) {
+  // Represent the index of a locals array with TWO bytes now
+  uint8_t byte1 = (doubleByte >> 8) & 0xff;
+  uint8_t byte2 = doubleByte & 0xff;
+  emitBytes(byte1, byte2);
+}
+
 //> Jumping Back and Forth emit-loop
 static void emitLoop(int loopStart) {
   emitByte(OP_LOOP);
@@ -261,7 +269,8 @@ static void emitReturn() {
 */
 //> Methods and Initializers return-this
   if (current->type == TYPE_INITIALIZER) {
-    emitBytes(OP_GET_LOCAL, 0);
+    emitByte(OP_GET_LOCAL);
+    emitDoubleBytes(0);
   } else {
     emitByte(OP_NIL);
   }
@@ -271,19 +280,22 @@ static void emitReturn() {
 }
 //< Compiling Expressions emit-return
 //> Compiling Expressions make-constant
-static uint8_t makeConstant(Value value) {
+static uint16_t makeConstant(Value value) {
   int constant = addConstant(currentChunk(), value);
-  if (constant > UINT8_MAX) {
+  // We have to update this too because a chunk uses uint8_t to look up a constant
+  // We can mirror the locals change with uint16_t so a chunk can now store more constants
+  if (constant > UINT16_MAX) {
     error("Too many constants in one chunk.");
     return 0;
   }
 
-  return (uint8_t)constant;
+  return (uint16_t)constant;
 }
 //< Compiling Expressions make-constant
 //> Compiling Expressions emit-constant
 static void emitConstant(Value value) {
-  emitBytes(OP_CONSTANT, makeConstant(value));
+  emitByte(OP_CONSTANT);
+  emitDoubleBytes(makeConstant(value));
 }
 //< Compiling Expressions emit-constant
 //> Jumping Back and Forth patch-jump
@@ -509,7 +521,7 @@ static int resolveUpvalue(Compiler* compiler, Token* name) {
 //> Local Variables add-local
 static void addLocal(Token name, bool final) {
 //> too-many-locals
-  if (current->localCount == UINT8_COUNT) {
+  if (current->localCount == UINT16_COUNT) {
     error("Too many local variables in function.");
     return;
   }
@@ -794,14 +806,24 @@ static void namedVariable(Token name, bool canAssign) {
     emitBytes(OP_SET_GLOBAL, arg);
 */
 //> Local Variables emit-set
-    emitBytes(setOp, (uint8_t)arg);
+    emitByte(setOp);
+    if (setOp == OP_SET_UPVALUE) {
+      emitByte((uint8_t)arg);
+    } else {
+      emitDoubleBytes((uint16_t)arg);
+    }
 //< Local Variables emit-set
   } else {
 /* Global Variables named-variable < Local Variables emit-get
     emitBytes(OP_GET_GLOBAL, arg);
 */
 //> Local Variables emit-get
-    emitBytes(getOp, (uint8_t)arg);
+    emitByte(getOp);
+    if (getOp == OP_GET_UPVALUE) {
+      emitByte((uint8_t)arg);
+    } else {
+      emitDoubleBytes((uint16_t)arg);
+    }
 //< Local Variables emit-get
   }
 //< named-variable

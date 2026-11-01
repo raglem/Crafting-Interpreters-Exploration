@@ -2,6 +2,9 @@
 //> Types of Values include-stdarg
 #include <stdarg.h>
 //< Types of Values include-stdarg
+//> Calls and Functions vm-include-stddef
+#include <stddef.h>
+//< Calls and Functions vm-include-stddef
 //> vm-include-stdio
 #include <stdio.h>
 //> Strings vm-include-string
@@ -153,9 +156,19 @@ void freeVM() {
 void push(Value value) {
   if (vm.capacity < vm.current + 1) {
     int oldCapacity = vm.capacity;
+    // Apparently, frame->slots points to the wrong thing when reallocated
+    // The following changes record the offset of each stack and align it properly again when reallocating
+    ptrdiff_t frameSlotOffsets[FRAMES_MAX];
+    for (int i = 0; i < vm.frameCount; i++) {
+      frameSlotOffsets[i] = vm.frames[i].slots - vm.stack;
+    }
+
     vm.capacity = GROW_CAPACITY(oldCapacity);
     vm.stack = GROW_ARRAY(Value, vm.stack, oldCapacity, vm.capacity);
     vm.stackTop = vm.stack + vm.current;
+    for (int i = 0; i < vm.frameCount; i++) {
+      vm.frames[i].slots = vm.stack + frameSlotOffsets[i];
+    }
   }
   *vm.stackTop = value;
   vm.stackTop++;
@@ -430,7 +443,7 @@ static InterpretResult run() {
 */
 //> Closures read-constant
 #define READ_CONSTANT() \
-    (frame->closure->function->chunk.constants.values[READ_BYTE()])
+    (frame->closure->function->chunk.constants.values[READ_SHORT()])
 //< Closures read-constant
 
 //< Calls and Functions run
@@ -510,7 +523,7 @@ static InterpretResult run() {
 //< Global Variables interpret-pop
 //> Local Variables interpret-get-local
       case OP_GET_LOCAL: {
-        uint8_t slot = READ_BYTE();
+        uint16_t slot = READ_SHORT();
 /* Local Variables interpret-get-local < Calls and Functions push-local
         push(vm.stack[slot]); // [slot]
 */
@@ -522,7 +535,7 @@ static InterpretResult run() {
 //< Local Variables interpret-get-local
 //> Local Variables interpret-set-local
       case OP_SET_LOCAL: {
-        uint8_t slot = READ_BYTE();
+        uint16_t slot = READ_SHORT();
 /* Local Variables interpret-set-local < Calls and Functions set-local
         vm.stack[slot] = peek(0);
 */
