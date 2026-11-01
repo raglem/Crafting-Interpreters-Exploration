@@ -1513,6 +1513,20 @@ static void switchStatement() {
   FREE_ARRAY(int, endJumps, endJumpCapacity);
   endScope();
 }
+
+static void unlessStatement() {
+  consume(TOKEN_LEFT_PAREN, "Expect '(' after 'unless'.");
+  expression();
+  consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition."); 
+
+  int thenJump = emitJump(OP_JUMP_IF_TRUE);
+  emitByte(OP_POP);
+
+  statement();
+
+  patchJump(thenJump);
+}
+
 //> Global Variables synchronize
 static void synchronize() {
   parser.panicMode = false;
@@ -1590,6 +1604,8 @@ static void statement() {
 //< Calls and Functions match-return
   } else if (match(TOKEN_SWITCH)) {
     switchStatement();
+  } else if (match(TOKEN_UNLESS)) {
+    unlessStatement();
 //> Jumping Back and Forth parse-while
   } else if (match(TOKEN_WHILE)) {
     whileStatement();

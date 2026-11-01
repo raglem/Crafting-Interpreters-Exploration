@@ -741,6 +741,12 @@ static InterpretResult run() {
         break;
       }
 //< Jumping Back and Forth op-jump-if-false
+      case OP_JUMP_IF_TRUE: {
+        uint16_t offset = READ_SHORT();
+        // Jump (based on the operand) if the previous slot is true
+        if (!isFalsey(peek(0))) frame-> ip += offset;
+        break;
+      }
 //> Jumping Back and Forth op-loop
       case OP_LOOP: {
         uint16_t offset = READ_SHORT();

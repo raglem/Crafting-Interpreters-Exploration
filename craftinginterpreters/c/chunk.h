@@ -70,6 +70,7 @@ typedef enum {
 //> Jumping Back and Forth jump-op
   OP_JUMP,
 //< Jumping Back and Forth jump-op
+  OP_JUMP_IF_TRUE,
 //> Jumping Back and Forth jump-if-false-op
   OP_JUMP_IF_FALSE,
 //< Jumping Back and Forth jump-if-false-op
