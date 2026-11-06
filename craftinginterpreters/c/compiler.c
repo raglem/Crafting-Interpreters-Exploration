@@ -438,7 +438,7 @@ static void parsePrecedence(Precedence precedence);
 
 //< Compiling Expressions forward-declarations
 //> Global Variables identifier-constant
-static uint8_t identifierConstant(Token* name) {
+static uint16_t identifierConstant(Token* name) {
   return makeConstant(OBJ_VAL(copyString(name->start,
                                          name->length)));
 }
@@ -567,7 +567,7 @@ static void declareVariable(bool final) {
 }
 //< Local Variables declare-variable
 //> Global Variables parse-variable
-static uint8_t parseVariable(const char* errorMessage) {
+static uint16_t parseVariable(const char* errorMessage) {
   bool final = false;
   if (match(TOKEN_FINAL)) {
     final = true;
@@ -580,7 +580,7 @@ static uint8_t parseVariable(const char* errorMessage) {
   if (current->scopeDepth > 0) return 0;
 
 //< Local Variables parse-local
-  uint8_t global = identifierConstant(&parser.previous);
+  uint16_t global = identifierConstant(&parser.previous);
   if (final) {
     ObjString* string = copyString(parser.previous.start,
                                    parser.previous.length);
@@ -599,7 +599,7 @@ static void markInitialized() {
 }
 //< Local Variables mark-initialized
 //> Global Variables define-variable
-static void defineVariable(uint8_t global) {
+static void defineVariable(uint16_t global) {
 //> Local Variables define-variable
   if (current->scopeDepth > 0) {
 //> define-local
@@ -609,7 +609,8 @@ static void defineVariable(uint8_t global) {
   }
 
 //< Local Variables define-variable
-  emitBytes(OP_DEFINE_GLOBAL, global);
+  emitByte(OP_DEFINE_GLOBAL);
+  emitDoubleBytes(global);
 }
 //< Global Variables define-variable
 //> Calls and Functions argument-list
@@ -1247,7 +1248,7 @@ static void classDeclaration() {
 //< Classes and Instances class-declaration
 //> Calls and Functions fun-declaration
 static void funDeclaration() {
-  uint8_t global = parseVariable("Expect function name.");
+  uint16_t global = parseVariable("Expect function name.");
   markInitialized();
   function(TYPE_FUNCTION);
   defineVariable(global);
@@ -1255,7 +1256,7 @@ static void funDeclaration() {
 //< Calls and Functions fun-declaration
 //> Global Variables var-declaration
 static void varDeclaration() {
-  uint8_t global = parseVariable("Expect variable name.");
+  uint16_t global = parseVariable("Expect variable name.");
 
   if (match(TOKEN_EQUAL)) {
     expression();
