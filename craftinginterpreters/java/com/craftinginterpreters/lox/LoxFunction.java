@@ -40,12 +40,6 @@ class LoxFunction implements LoxCallable {
 //< lox-function-bind-with-initializer
   }
 //< Classes bind-instance
-  LoxFunction bind(LoxInstance instance, LoxFunction inner) {
-    Environment environment = new Environment(closure);
-    environment.define("this", instance);
-    environment.define("inner", inner);
-    return new LoxFunction(declaration, environment, isInitializer);
-  }
 //> function-to-string
   @Override
   public String toString() {
@@ -68,11 +62,9 @@ class LoxFunction implements LoxCallable {
 //> call-closure
     Environment environment = new Environment(closure);
 //< call-closure
-    if (declaration.params != null) {
-      for (int i = 0; i < declaration.params.size(); i++) {
-        environment.define(declaration.params.get(i).lexeme,
-            arguments.get(i));
-      }
+    for (int i = 0; i < declaration.params.size(); i++) {
+      environment.define(declaration.params.get(i).lexeme,
+          arguments.get(i));
     }
 
 /* Functions function-call < Functions catch-return
@@ -96,8 +88,4 @@ class LoxFunction implements LoxCallable {
     return null;
   }
 //< function-call
-
-  public boolean isGetter() {
-    return declaration.params == null;
-  }
 }

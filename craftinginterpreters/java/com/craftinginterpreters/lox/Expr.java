@@ -15,7 +15,6 @@ abstract class Expr {
     R visitSetExpr(Set expr);
     R visitSuperExpr(Super expr);
     R visitThisExpr(This expr);
-    R visitTypeExpr(Type expr);
     R visitUnaryExpr(Unary expr);
     R visitVariableExpr(Variable expr);
   }
@@ -183,20 +182,6 @@ abstract class Expr {
     final Token keyword;
   }
 //< expr-this
-//> expr-type
-  static class Type extends Expr {
-    Type(Token name) {
-      this.name = name;
-    }
-
-    @Override
-    <R> R accept(Visitor<R> visitor) {
-      return visitor.visitTypeExpr(this);
-    }
-
-    final Token name;
-  }
-//< expr-type
 //> expr-unary
   static class Unary extends Expr {
     Unary(Token operator, Expr right) {

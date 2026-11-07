@@ -66,7 +66,6 @@ class Parser {
       if (match(FUN)) return function("function");
 //< Functions match-fun
       if (match(VAR)) return varDeclaration();
-      if (match(TRAIT)) return traitDeclaration();
 
       return statement();
     } catch (ParseError error) {
@@ -86,20 +85,12 @@ class Parser {
       superclass = new Expr.Variable(previous());
     }
 
-    List<Expr> traits = withClause();
-
 //< Inheritance parse-superclass
     consume(LEFT_BRACE, "Expect '{' before class body.");
 
     List<Stmt.Function> methods = new ArrayList<>();
-    List<Stmt.Function> classMethods = new ArrayList<>();
     while (!check(RIGHT_BRACE) && !isAtEnd()) {
-      if (match(CLASS)) {
-        classMethods.add(function("method"));
-      }
-      else {
-        methods.add(function("method"));
-      }
+      methods.add(function("method"));
     }
 
     consume(RIGHT_BRACE, "Expect '}' after class body.");
@@ -108,7 +99,7 @@ class Parser {
     return new Stmt.Class(name, methods);
 */
 //> Inheritance construct-class-ast
-    return new Stmt.Class(name, superclass, methods, classMethods, traits);
+    return new Stmt.Class(name, superclass, methods);
 //< Inheritance construct-class-ast
   }
 //< Classes parse-class-declaration
@@ -261,23 +252,20 @@ class Parser {
 //> Functions parse-function
   private Stmt.Function function(String kind) {
     Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
-    List<Token> parameters = null;
 //> parse-parameters
-    if (!kind.equals("method") || check(LEFT_PAREN)){
-      consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
-      parameters = new ArrayList<>();
-      if (!check(RIGHT_PAREN)) {
-        do {
-          if (parameters.size() >= 255) {
-            error(peek(), "Can't have more than 255 parameters.");
-          }
+    consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+    List<Token> parameters = new ArrayList<>();
+    if (!check(RIGHT_PAREN)) {
+      do {
+        if (parameters.size() >= 255) {
+          error(peek(), "Can't have more than 255 parameters.");
+        }
 
-          parameters.add(
-              consume(IDENTIFIER, "Expect parameter name."));
-        } while (match(COMMA));
-      }
-      consume(RIGHT_PAREN, "Expect ')' after parameters.");
+        parameters.add(
+            consume(IDENTIFIER, "Expect parameter name."));
+      } while (match(COMMA));
     }
+    consume(RIGHT_PAREN, "Expect ')' after parameters.");
 //< parse-parameters
 //> parse-body
 
@@ -287,32 +275,6 @@ class Parser {
 //< parse-body
   }
 //< Functions parse-function
-  private Stmt traitDeclaration() {
-    Token name = consume(IDENTIFIER, "Expect trait name.");
-
-    List<Expr> traits = withClause();
-
-    consume(LEFT_BRACE, "Expected '{' before trait body.");
-
-    List<Stmt.Function> methods = new ArrayList<>();
-    while (!check(RIGHT_BRACE) && !isAtEnd()) {
-      methods.add(function("method"));
-    }
-
-    consume(RIGHT_BRACE, "Expected '}' after trait body.");
-
-    return new Stmt.Trait(name, traits, methods);
-  }
-  private List<Expr> withClause() {
-    List<Expr> traits = new ArrayList<>();
-    if (match(WITH)) {
-      do {
-        consume(IDENTIFIER, "Expect name for trait.");
-        traits.add(new Expr.Variable(previous()));
-      } while (match(COMMA));
-    }
-    return traits;
-  }
 //> Statements and State block
   private List<Stmt> block() {
     List<Stmt> statements = new ArrayList<>();
@@ -438,11 +400,6 @@ class Parser {
       Token operator = previous();
       Expr right = unary();
       return new Expr.Unary(operator, right);
-    }
-
-    if (match(TYPE)) {
-      Token name = consume(IDENTIFIER, "Expect variable name after 'type'");
-      return new Expr.Type(name);
     }
 
 /* Parsing Expressions unary < Functions unary-call

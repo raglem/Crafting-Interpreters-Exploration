@@ -27,8 +27,6 @@
 #define UINT8_COUNT (UINT8_MAX + 1)
 //< Local Variables uint8-count
 
-#define UINT16_COUNT (UINT16_MAX + 1)
-
 #endif
 //> omit
 // In the book, we show them defined, but for working on them locally,

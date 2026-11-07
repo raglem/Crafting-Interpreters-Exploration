@@ -22,7 +22,7 @@
 */
 //> Calls and Functions frame-max
 #define FRAMES_MAX 64
-// #define STACK_MAX (FRAMES_MAX * UINT8_COUNT)
+#define STACK_MAX (FRAMES_MAX * UINT8_COUNT)
 //< Calls and Functions frame-max
 //> Calls and Functions call-frame
 
@@ -50,10 +50,8 @@ typedef struct {
   int frameCount;
   
 //< Calls and Functions frame-array
-  int current;
-  int capacity;
 //> vm-stack
-  Value* stack;
+  Value stack[STACK_MAX];
   Value* stackTop;
 //< vm-stack
 //> Global Variables vm-globals

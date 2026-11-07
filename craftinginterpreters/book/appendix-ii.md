@@ -158,12 +158,6 @@ State](statements-and-state.html#variable-syntax)".
 
 ^code stmt-var
 
-### Trait statement
-
-Trait 
-
-^code stmt-trait
-
 ### While statement
 
 The `while` statement is introduced in "[Control

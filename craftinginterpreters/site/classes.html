@@ -233,14 +233,8 @@ add after <em>declaration</em>()</div>
     <span class="i">consume</span>(<span class="i">LEFT_BRACE</span>, <span class="s">&quot;Expect &#39;{&#39; before class body.&quot;</span>);
 
     <span class="t">List</span>&lt;<span class="t">Stmt</span>.<span class="t">Function</span>&gt; <span class="i">methods</span> = <span class="k">new</span> <span class="t">ArrayList</span>&lt;&gt;();
-    <span class="t">List</span>&lt;<span class="t">Stmt</span>.<span class="t">Function</span>&gt; <span class="i">classMethods</span> = <span class="k">new</span> <span class="t">ArrayList</span>&lt;&gt;();
     <span class="k">while</span> (!<span class="i">check</span>(<span class="i">RIGHT_BRACE</span>) &amp;&amp; !<span class="i">isAtEnd</span>()) {
-      <span class="k">if</span> (<span class="i">match</span>(<span class="i">CLASS</span>)) {
-        <span class="i">classMethods</span>.<span class="i">add</span>(<span class="i">function</span>(<span class="s">&quot;method&quot;</span>));
-      }
-      <span class="k">else</span> {
-        <span class="i">methods</span>.<span class="i">add</span>(<span class="i">function</span>(<span class="s">&quot;method&quot;</span>));
-      }
+      <span class="i">methods</span>.<span class="i">add</span>(<span class="i">function</span>(<span class="s">&quot;method&quot;</span>));
     }
 
     <span class="i">consume</span>(<span class="i">RIGHT_BRACE</span>, <span class="s">&quot;Expect &#39;}&#39; after class body.&quot;</span>);
@@ -285,15 +279,6 @@ add after <em>visitBlockStmt</em>()</div>
 <pre>  <span class="a">@Override</span>
   <span class="k">public</span> <span class="t">Void</span> <span class="i">visitClassStmt</span>(<span class="t">Stmt</span>.<span class="t">Class</span> <span class="i">stmt</span>) {
     <span class="i">environment</span>.<span class="i">define</span>(<span class="i">stmt</span>.<span class="i">name</span>.<span class="i">lexeme</span>, <span class="k">null</span>);
-
-    <span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">LoxFunction</span>&gt; <span class="i">classMethods</span> = <span class="k">new</span> <span class="t">HashMap</span>&lt;&gt;();
-    <span class="k">for</span> (<span class="t">Stmt</span>.<span class="t">Function</span> <span class="i">method</span>: <span class="i">stmt</span>.<span class="i">classMethods</span>) {
-       <span class="t">LoxFunction</span> <span class="i">function</span> = <span class="k">new</span> <span class="t">LoxFunction</span>(<span class="i">method</span>, <span class="i">environment</span>, <span class="k">false</span>);
-       <span class="i">classMethods</span>.<span class="i">put</span>(<span class="i">method</span>.<span class="i">name</span>.<span class="i">lexeme</span>, <span class="i">function</span>);
-    }
-
-    <span class="t">LoxClass</span> <span class="i">metaclass</span> = <span class="k">new</span> <span class="t">LoxClass</span>(<span class="k">null</span>, <span class="i">stmt</span>.<span class="i">name</span>.<span class="i">lexeme</span> + <span class="s">&quot; metaclass&quot;</span>, (<span class="t">LoxClass</span>)<span class="i">superclass</span>, <span class="i">classMethods</span>);
-
     <span class="t">LoxClass</span> <span class="i">klass</span> = <span class="k">new</span> <span class="t">LoxClass</span>(<span class="i">stmt</span>.<span class="i">name</span>.<span class="i">lexeme</span>);
     <span class="i">environment</span>.<span class="i">assign</span>(<span class="i">stmt</span>.<span class="i">name</span>, <span class="i">klass</span>);
     <span class="k">return</span> <span class="k">null</span>;
@@ -374,7 +359,7 @@ that is.</p>
 
 </pre><div class="source-file"><em>lox/LoxClass.java</em><br>
 replace 1 line</div>
-<pre class="insert"><span class="k">class</span> <span class="t">LoxClass</span> <span class="k">extends</span> <span class="t">LoxInstance</span> <span class="k">implements</span> <span class="t">LoxCallable</span> {
+<pre class="insert"><span class="k">class</span> <span class="t">LoxClass</span> <span class="k">implements</span> <span class="t">LoxCallable</span> {
 </pre><pre class="insert-after">  final String name;
 </pre></div>
 <div class="source-file-narrow"><em>lox/LoxClass.java</em>, replace 1 line</div>
@@ -521,13 +506,7 @@ add after <em>visitCallExpr</em>()</div>
   <span class="k">public</span> <span class="t">Object</span> <span class="i">visitGetExpr</span>(<span class="t">Expr</span>.<span class="t">Get</span> <span class="i">expr</span>) {
     <span class="t">Object</span> <span class="i">object</span> = <span class="i">evaluate</span>(<span class="i">expr</span>.<span class="i">object</span>);
     <span class="k">if</span> (<span class="i">object</span> <span class="k">instanceof</span> <span class="t">LoxInstance</span>) {
-      <span class="t">Object</span> <span class="i">result</span> = ((<span class="t">LoxInstance</span>)<span class="i">object</span>).<span class="i">get</span>(<span class="i">expr</span>.<span class="i">name</span>);
-      <span class="k">if</span> (<span class="i">result</span> <span class="k">instanceof</span> <span class="t">LoxFunction</span> &amp;&amp;
-        ((<span class="t">LoxFunction</span>) <span class="i">result</span>).<span class="i">isGetter</span>()
-      ) {
-        <span class="i">result</span> = ((<span class="t">LoxFunction</span>) <span class="i">result</span>).<span class="i">call</span>(<span class="k">this</span>, <span class="k">null</span>);
-      }
-      <span class="k">return</span> <span class="i">result</span>;
+      <span class="k">return</span> ((<span class="t">LoxInstance</span>) <span class="i">object</span>).<span class="i">get</span>(<span class="i">expr</span>.<span class="i">name</span>);
     }
 
     <span class="k">throw</span> <span class="k">new</span> <span class="t">RuntimeError</span>(<span class="i">expr</span>.<span class="i">name</span>,
@@ -840,14 +819,6 @@ in <em>visitClassStmt</em>()</div>
       <span class="i">resolveFunction</span>(<span class="i">method</span>, <span class="i">declaration</span>);<span name="local"> </span>
     }
 
-
-    <span class="k">for</span> (<span class="t">Stmt</span>.<span class="t">Function</span> <span class="i">method</span> : <span class="i">stmt</span>.<span class="i">classMethods</span>) {
-      <span class="i">beginScope</span>();
-      <span class="i">scopes</span>.<span class="i">peek</span>().<span class="i">put</span>(<span class="s">&quot;this&quot;</span>, <span class="k">true</span>);
-      <span class="i">resolveFunction</span>(<span class="i">method</span>, <span class="t">FunctionType</span>.<span class="i">METHOD</span>);
-      <span class="i">endScope</span>();
-    }
-
 </pre><pre class="insert-after">    return null;
 </pre></div>
 <div class="source-file-narrow"><em>lox/Resolver.java</em>, in <em>visitClassStmt</em>()</div>
@@ -871,8 +842,7 @@ add <em>&ldquo;,&rdquo;</em> to previous line</div>
 
 <p>That&rsquo;s going to be important when we resolve <code>this</code> expressions. For now, don&rsquo;t
 worry about it. The interesting stuff is in the interpreter.</p>
-<div class="codehilite"><pre class="insert-before">
-
+<div class="codehilite"><pre class="insert-before">    environment.define(stmt.name.lexeme, null);
 </pre><div class="source-file"><em>lox/Interpreter.java</em><br>
 in <em>visitClassStmt</em>()<br>
 replace 1 line</div>
@@ -1117,8 +1087,7 @@ that surrounding scope.</p>
 in <em>visitClassStmt</em>()</div>
 <pre class="insert">    <span class="i">endScope</span>();
 
-</pre><pre class="insert-after">
-
+</pre><pre class="insert-after">    return null;
 </pre></div>
 <div class="source-file-narrow"><em>lox/Resolver.java</em>, in <em>visitClassStmt</em>()</div>
 
@@ -1232,7 +1201,7 @@ values. That way we don&rsquo;t lose track of the previous value if one class ne
 inside another.</p>
 <p>Once the methods have been resolved, we &ldquo;pop&rdquo; that stack by restoring the old
 value.</p>
-<div class="codehilite"><pre class="insert-before">    }
+<div class="codehilite"><pre class="insert-before">    endScope();
 
 </pre><div class="source-file"><em>lox/Resolver.java</em><br>
 in <em>visitClassStmt</em>()</div>

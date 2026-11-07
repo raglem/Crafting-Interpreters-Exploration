@@ -132,18 +132,9 @@ class Interpreter implements Expr.Visitor<Object>,
       environment.define("super", superclass);
     }
 //< Inheritance begin-superclass-environment
-
-    Map<String, LoxFunction> classMethods = new HashMap<>();
-    for (Stmt.Function method: stmt.classMethods) {
-       LoxFunction function = new LoxFunction(method, environment, false);
-       classMethods.put(method.name.lexeme, function);
-    }
-
-    LoxClass metaclass = new LoxClass(null, stmt.name.lexeme + " metaclass", (LoxClass)superclass, classMethods);
-
 //> interpret-methods
 
-    Map<String, LoxFunction> methods = applyTraits(stmt.traits);
+    Map<String, LoxFunction> methods = new HashMap<>();
     for (Stmt.Function method : stmt.methods) {
 /* Classes interpret-methods < Classes interpreter-method-initializer
       LoxFunction function = new LoxFunction(method, environment);
@@ -159,7 +150,7 @@ class Interpreter implements Expr.Visitor<Object>,
     LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
 */
 //> Inheritance interpreter-construct-class
-    LoxClass klass = new LoxClass(metaclass, stmt.name.lexeme,
+    LoxClass klass = new LoxClass(stmt.name.lexeme,
         (LoxClass)superclass, methods);
 //> end-superclass-environment
 
@@ -241,54 +232,6 @@ class Interpreter implements Expr.Visitor<Object>,
     return null;
   }
 //< Statements and State visit-var
-  @Override
-  public Void visitTraitStmt(Stmt.Trait stmt) {
-    environment.define(stmt.name.lexeme, null);
-
-    Map<String, LoxFunction> methods = applyTraits(stmt.traits);
-
-    for (Stmt.Function method : stmt.methods) {
-      if (methods.containsKey(method.name.lexeme)) {
-        throw new RuntimeError(method.name,
-            "A previous trait declares a method named '" +
-                method.name.lexeme + "'.");
-      }
-
-      LoxFunction function = new LoxFunction(
-          method, environment, false);
-      methods.put(method.name.lexeme, function);
-    }
-
-    LoxTrait trait = new LoxTrait(stmt.name, methods);
-
-    environment.assign(stmt.name, trait);
-    return null;
-  }
-  private Map<String, LoxFunction> applyTraits(List<Expr> traits) {
-    Map<String, LoxFunction> methods = new HashMap<>();
-
-    for (Expr traitExpr : traits) {
-      Object traitObject = evaluate(traitExpr);
-      if (!(traitObject instanceof LoxTrait)) {
-        Token name = ((Expr.Variable) traitExpr).name;
-        throw new RuntimeError(name,
-            "'" + name.lexeme + "' is not a trait.");
-      }
-
-      LoxTrait trait = (LoxTrait) traitObject;
-      for (String name : trait.methods.keySet()) {
-        if (methods.containsKey(name)) {
-          throw new RuntimeError(trait.name,
-              "A previous trait declares a method named '" +
-                  name + "'.");
-        }
-
-        methods.put(name, trait.methods.get(name));
-      }
-    }
-
-    return methods;
-  }
 //> Control Flow visit-while
   @Override
   public Void visitWhileStmt(Stmt.While stmt) {
@@ -424,13 +367,7 @@ class Interpreter implements Expr.Visitor<Object>,
   public Object visitGetExpr(Expr.Get expr) {
     Object object = evaluate(expr.object);
     if (object instanceof LoxInstance) {
-      Object result = ((LoxInstance)object).get(expr.name);
-      if (result instanceof LoxFunction &&
-        ((LoxFunction) result).isGetter()
-      ) {
-        result = ((LoxFunction) result).call(this, null);
-      }
-      return result;
+      return ((LoxInstance) object).get(expr.name);
     }
 
     throw new RuntimeError(expr.name,
@@ -491,7 +428,7 @@ class Interpreter implements Expr.Visitor<Object>,
 //< super-find-this
 //> super-find-method
 
-    LoxFunction method = superclass.findMethod(object, expr.method.lexeme);
+    LoxFunction method = superclass.findMethod(expr.method.lexeme);
 //> super-no-method
 
     if (method == null) {
@@ -500,21 +437,10 @@ class Interpreter implements Expr.Visitor<Object>,
     }
 
 //< super-no-method
-    return method;
+    return method.bind(object);
 //< super-find-method
   }
 //< Inheritance interpreter-visit-super
-  public Object visitTypeExpr(Expr.Type expr) {
-    Object value = lookUpVariable(expr.name, expr);
-    if (value == null)  return "nil";
-    if (value instanceof String)  return "string";
-    if (value instanceof Double)  return "number";
-    if (value instanceof Boolean) return "boolean";
-    if (value instanceof LoxClass)  return ((LoxClass)value).name + " (class)";
-    if (value instanceof LoxInstance) return ((LoxInstance)value).getClassName() + " (instance)";
-    if (value instanceof LoxFunction) return "function";
-    return "idk";
-  }
 //> Classes interpreter-visit-this
   @Override
   public Object visitThisExpr(Expr.This expr) {

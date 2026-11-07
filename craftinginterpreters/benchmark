@@ -1,5 +1,8 @@
-var x = clock();
-for (var i = 0; i < 1000000; i = i + 1) {
-    var dummy = i + 1;
+fun fib(n) {
+  if (n < 2) return n;
+  return fib(n - 2) + fib(n - 1);
 }
-print clock() - x;
+
+var start = clock();
+print fib(35);
+print clock() - start;

@@ -14,10 +14,6 @@ class LoxInstance {
     this.klass = klass;
   }
 
-  String getClassName() {
-    return this.klass.name;
-  }
-
 //> lox-instance-get-property
   Object get(Token name) {
     if (fields.containsKey(name.lexeme)) {
@@ -25,12 +21,12 @@ class LoxInstance {
     }
 
 //> lox-instance-get-method
-    LoxFunction method = klass.findMethod(this, name.lexeme);
+    LoxFunction method = klass.findMethod(name.lexeme);
 /* Classes lox-instance-get-method < Classes lox-instance-bind-method
     if (method != null) return method;
 */
 //> lox-instance-bind-method
-    if (method != null) return method;
+    if (method != null) return method.bind(this);
 //< lox-instance-bind-method
 
 //< lox-instance-get-method

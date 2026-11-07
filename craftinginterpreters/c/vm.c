@@ -2,9 +2,6 @@
 //> Types of Values include-stdarg
 #include <stdarg.h>
 //< Types of Values include-stdarg
-//> Calls and Functions vm-include-stddef
-#include <stddef.h>
-//< Calls and Functions vm-include-stddef
 //> vm-include-stdio
 #include <stdio.h>
 //> Strings vm-include-string
@@ -36,7 +33,6 @@ static Value clockNative(int argCount, Value* args) {
 //< Calls and Functions clock-native
 //> reset-stack
 static void resetStack() {
-  vm.current = 0;
   vm.stackTop = vm.stack;
 //> Calls and Functions reset-frame-count
   vm.frameCount = 0;
@@ -75,9 +71,9 @@ static void runtimeError(const char* format, ...) {
 //> Closures runtime-error-function
     ObjFunction* function = frame->closure->function;
 //< Closures runtime-error-function
-    // size_t instruction = frame->ip - function->chunk.code - 1;
+    size_t instruction = frame->ip - function->chunk.code - 1;
     fprintf(stderr, "[line %d] in ", // [minus]
-            0);
+            function->chunk.lines[instruction]);
     if (function->name == NULL) {
       fprintf(stderr, "script\n");
     } else {
@@ -100,8 +96,6 @@ static void defineNative(const char* name, NativeFn function) {
 //< Calls and Functions define-native
 
 void initVM() {
-  vm.stack = NULL;
-  vm.capacity = 0;
 //> call-reset-stack
   resetStack();
 //< call-reset-stack
@@ -154,31 +148,13 @@ void freeVM() {
 }
 //> push
 void push(Value value) {
-  if (vm.capacity < vm.current + 1) {
-    int oldCapacity = vm.capacity;
-    // Apparently, frame->slots points to the wrong thing when reallocated
-    // The following changes record the offset of each stack and align it properly again when reallocating
-    ptrdiff_t frameSlotOffsets[FRAMES_MAX];
-    for (int i = 0; i < vm.frameCount; i++) {
-      frameSlotOffsets[i] = vm.frames[i].slots - vm.stack;
-    }
-
-    vm.capacity = GROW_CAPACITY(oldCapacity);
-    vm.stack = GROW_ARRAY(Value, vm.stack, oldCapacity, vm.capacity);
-    vm.stackTop = vm.stack + vm.current;
-    for (int i = 0; i < vm.frameCount; i++) {
-      vm.frames[i].slots = vm.stack + frameSlotOffsets[i];
-    }
-  }
   *vm.stackTop = value;
   vm.stackTop++;
-  vm.current++;
 }
 //< push
 //> pop
 Value pop() {
   vm.stackTop--;
-  vm.current--;
   return *vm.stackTop;
 }
 //< pop
@@ -406,9 +382,8 @@ static void concatenate() {
   memcpy(chars, a->chars, a->length);
   memcpy(chars + a->length, b->chars, b->length);
   chars[length] = '\0';
-  ObjString* result = copyString(chars, length);
-  FREE_ARRAY(char, chars, length + 1);
 
+  ObjString* result = takeString(chars, length);
 //> Garbage Collection concatenate-pop
   pop();
   pop();
@@ -443,7 +418,7 @@ static InterpretResult run() {
 */
 //> Closures read-constant
 #define READ_CONSTANT() \
-    (frame->closure->function->chunk.constants.values[READ_SHORT()])
+    (frame->closure->function->chunk.constants.values[READ_BYTE()])
 //< Closures read-constant
 
 //< Calls and Functions run
@@ -523,7 +498,7 @@ static InterpretResult run() {
 //< Global Variables interpret-pop
 //> Local Variables interpret-get-local
       case OP_GET_LOCAL: {
-        uint16_t slot = READ_SHORT();
+        uint8_t slot = READ_BYTE();
 /* Local Variables interpret-get-local < Calls and Functions push-local
         push(vm.stack[slot]); // [slot]
 */
@@ -535,7 +510,7 @@ static InterpretResult run() {
 //< Local Variables interpret-get-local
 //> Local Variables interpret-set-local
       case OP_SET_LOCAL: {
-        uint16_t slot = READ_SHORT();
+        uint8_t slot = READ_BYTE();
 /* Local Variables interpret-set-local < Calls and Functions set-local
         vm.stack[slot] = peek(0);
 */
@@ -707,7 +682,7 @@ static InterpretResult run() {
           runtimeError("Operand must be a number.");
           return INTERPRET_RUNTIME_ERROR;
         }
-        vm.stackTop[-1] = -AS_NUMBER(vm.stackTop[-1]);
+        push(NUMBER_VAL(-AS_NUMBER(pop())));
         break;
 //< Types of Values op-negate
 //> Global Variables interpret-print
@@ -741,12 +716,6 @@ static InterpretResult run() {
         break;
       }
 //< Jumping Back and Forth op-jump-if-false
-      case OP_JUMP_IF_TRUE: {
-        uint16_t offset = READ_SHORT();
-        // Jump (based on the operand) if the previous slot is true
-        if (!isFalsey(peek(0))) frame-> ip += offset;
-        break;
-      }
 //> Jumping Back and Forth op-loop
       case OP_LOOP: {
         uint16_t offset = READ_SHORT();

@@ -12,7 +12,6 @@ typedef enum {
 //> op-constant
   OP_CONSTANT,
 //< op-constant
-  OP_CONSTANT_LONG,
 //> Types of Values literal-ops
   OP_NIL,
   OP_TRUE,
@@ -70,7 +69,6 @@ typedef enum {
 //> Jumping Back and Forth jump-op
   OP_JUMP,
 //< Jumping Back and Forth jump-op
-  OP_JUMP_IF_TRUE,
 //> Jumping Back and Forth jump-if-false-op
   OP_JUMP_IF_FALSE,
 //< Jumping Back and Forth jump-if-false-op
@@ -104,11 +102,6 @@ typedef enum {
 //< Methods and Initializers method-op
 } OpCode;
 //< op-enum
-
-typedef struct {
-  int offset;
-  int line;
-} LineStart;
 //> chunk-struct
 
 typedef struct {
@@ -118,9 +111,7 @@ typedef struct {
 //< count-and-capacity
   uint8_t* code;
 //> chunk-lines
-  int lineCount;
-  int lineCapacity;
-  LineStart* lines;
+  int* lines;
 //< chunk-lines
 //> chunk-constants
   ValueArray constants;
@@ -143,7 +134,5 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line);
 //> add-constant-h
 int addConstant(Chunk* chunk, Value value);
 //< add-constant-h
-void writeConstant(Chunk* chunk, Value value, int line);
-int getLine(Chunk* chunk, int instruction);
 
 #endif

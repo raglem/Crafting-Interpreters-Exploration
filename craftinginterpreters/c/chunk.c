@@ -14,8 +14,6 @@ void initChunk(Chunk* chunk) {
   chunk->capacity = 0;
   chunk->code = NULL;
 //> chunk-null-lines
-  chunk->lineCount = 0;
-  chunk->lineCapacity = 0;
   chunk->lines = NULL;
 //< chunk-null-lines
 //> chunk-init-constant-array
@@ -26,7 +24,7 @@ void initChunk(Chunk* chunk) {
 void freeChunk(Chunk* chunk) {
   FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
 //> chunk-free-lines
-  FREE_ARRAY(LineStart, chunk->lines, chunk->lineCapacity);
+  FREE_ARRAY(int, chunk->lines, chunk->capacity);
 //< chunk-free-lines
 //> chunk-free-constants
   freeValueArray(&chunk->constants);
@@ -46,60 +44,19 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line) {
     chunk->capacity = GROW_CAPACITY(oldCapacity);
     chunk->code = GROW_ARRAY(uint8_t, chunk->code,
         oldCapacity, chunk->capacity);
+//> write-chunk-line
+    chunk->lines = GROW_ARRAY(int, chunk->lines,
+        oldCapacity, chunk->capacity);
+//< write-chunk-line
   }
 
   chunk->code[chunk->count] = byte;
-  chunk->count++;
 //> chunk-write-line
-  if (chunk->lineCount > 0 &&
-      line == chunk->lines[chunk->lineCount - 1].line) {
-    return;
-  }
-
-  if (chunk->lineCapacity < chunk->lineCount + 1) {
-    int oldCapacity = chunk->lineCapacity;
-    chunk->lineCapacity = GROW_CAPACITY(oldCapacity);
-    chunk->lines = GROW_ARRAY(LineStart, chunk->lines, oldCapacity, chunk->lineCapacity);
-  }
+  chunk->lines[chunk->count] = line;
 //< chunk-write-line
-  LineStart lineStart;
-  lineStart.offset = chunk->count - 1;
-  lineStart.line = line;
-  chunk->lines[chunk->lineCount] = lineStart;
-  chunk->lineCount++;
+  chunk->count++;
 }
 //< write-chunk
-void writeConstant(Chunk* chunk, Value value, int line) {
-  int index = addConstant(chunk, value);
-  if (index < 256) {
-    writeChunk(chunk, OP_CONSTANT, line);
-    writeChunk(chunk, (u_int8_t)value, line);
-  }
-  else {
-    writeChunk(chunk, OP_CONSTANT_LONG, line);
-    writeChunk(chunk, (uint8_t)(index & 0xff), line);
-    writeChunk(chunk, (uint8_t)((index >> 8) & 0xff), line);
-    writeChunk(chunk, (uint8_t)((index >> 16) & 0xff), line);
-  }
-}
-int getLine(Chunk* chunk, int instruction) {
-  int start = 0;
-  int end = chunk -> lineCount - 1;
-  while(true) {
-    int mid = (start + end) / 2;
-    LineStart* line = &(chunk->lines)[mid];
-    if (instruction < line->offset) {
-      end = mid - 1;
-    }
-    else if (mid == chunk -> lineCount - 1 ||
-        instruction < chunk->lines[mid + 1].offset) {
-      return line -> line;
-    }
-    else {
-      start = mid + 1;
-    }
-  }
-}
 //> add-constant
 int addConstant(Chunk* chunk, Value value) {
 //> Garbage Collection add-constant-push

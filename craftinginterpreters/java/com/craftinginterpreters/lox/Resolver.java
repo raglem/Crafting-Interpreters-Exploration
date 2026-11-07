@@ -42,9 +42,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
  */
 //> Inheritance class-type-subclass
     CLASS,
-    SUBCLASS,
+    SUBCLASS
 //< Inheritance class-type-subclass
-    TRAIT
   }
 
   private ClassType currentClass = ClassType.NONE;
@@ -93,11 +92,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
       resolve(stmt.superclass);
     }
 //< Inheritance resolve-superclass
-
-    for (Expr trait : stmt.traits) {
-      resolve(trait);
-    }
-
 //> Inheritance begin-super-scope
 
     if (stmt.superclass != null) {
@@ -110,7 +104,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 //> resolver-begin-this-scope
     beginScope();
     scopes.peek().put("this", true);
-    scopes.peek().put("inner", true);
 
 //< resolver-begin-this-scope
     for (Stmt.Function method : stmt.methods) {
@@ -128,14 +121,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     endScope();
 
 //< resolver-end-this-scope
-
-    for (Stmt.Function method : stmt.classMethods) {
-      beginScope();
-      scopes.peek().put("this", true);
-      resolveFunction(method, FunctionType.METHOD);
-      endScope();
-    }
-
 //< resolve-methods
 //> Inheritance end-super-scope
     if (stmt.superclass != null) endScope();
@@ -208,29 +193,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     return null;
   }
 //< visit-return-stmt
-  public Void visitTraitStmt(Stmt.Trait stmt) {
-    declare(stmt.name);
-    define(stmt.name);
-    ClassType enclosingClass = currentClass;
-    currentClass = ClassType.TRAIT;
-
-    for (Expr trait : stmt.traits) {
-      resolve(trait);
-    }
-
-    beginScope();
-    scopes.peek().put("this", true);
-
-    for (Stmt.Function method : stmt.methods) {
-      FunctionType declaration = FunctionType.METHOD;
-      resolveFunction(method, declaration);
-    }
-
-    endScope();
-
-    currentClass = enclosingClass;
-    return null;
-  }
 //> visit-var-stmt
   @Override
   public Void visitVarStmt(Stmt.Var stmt) {
@@ -321,10 +283,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     if (currentClass == ClassType.NONE) {
       Lox.error(expr.keyword,
           "Can't use 'super' outside of a class.");
-    } else if (currentClass == ClassType.TRAIT) {
-      Lox.error(expr.keyword,
-          "Can't use 'super' for a trait."
-      );
     } else if (currentClass != ClassType.SUBCLASS) {
       Lox.error(expr.keyword,
           "Can't use 'super' in a class with no superclass.");
@@ -347,10 +305,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
 //< this-outside-of-class
     resolveLocal(expr, expr.keyword);
-    return null;
-  }
-  @Override 
-  public Void visitTypeExpr(Expr.Type expr) {
     return null;
   }
 
@@ -397,11 +351,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
 //< set-current-function
     beginScope();
-    if (function.params != null) {
-      for (Token param : function.params) {
-        declare(param);
-        define(param);
-      }
+    for (Token param : function.params) {
+      declare(param);
+      define(param);
     }
     resolve(function.body);
     endScope();
