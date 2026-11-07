@@ -111,7 +111,8 @@ typedef struct {
 //< Calls and Functions obj-function
 //> Calls and Functions obj-native
 
-typedef Value (*NativeFn)(int argCount, Value* args);
+// Indicate success or failure when executing native function
+typedef bool (*NativeFn)(int argCount, Value* args);
 
 typedef struct {
   Obj obj;

@@ -1,0 +1,2 @@
+var x = clock("dunno", "more");
+print x;
