@@ -1,8 +1,37 @@
+// Test recursion
 fun fib(n) {
   if (n < 2) return n;
   return fib(n - 2) + fib(n - 1);
 }
 
-var start = clock();
-print fib(35);
-print clock() - start;
+// Test multiple function calls
+fun first(n) {
+    return n + second(n);
+}
+fun second(n) {
+    return (2 * n) + third(n);
+}
+fun third(n) {
+    return 3 * n;
+}
+fun multiple() {
+    for (var i = 0; i < 1000000; i = i + 1) {
+        first(10);
+    }
+}
+
+print "";
+print "-----BENCHMARK PROGRAM (After Native IP) ------";
+print "";
+
+print "Fibonnaci Test: ";
+var fibonacciStart = clock();
+fib(35);
+print clock() - fibonacciStart;
+print "";
+
+print "Multiple Functions Test: ";
+var multipleStart = clock();
+multiple();
+print clock() - multipleStart;
+print "";
