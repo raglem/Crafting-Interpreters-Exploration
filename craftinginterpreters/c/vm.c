@@ -4,6 +4,7 @@
 //< Types of Values include-stdarg
 //> vm-include-stdio
 #include <stdio.h>
+#include <stdlib.h>
 //> Strings vm-include-string
 #include <string.h>
 //< Strings vm-include-string
@@ -41,6 +42,72 @@ static bool clockNative(int argCount, Value* args) {
   return true;
 }
 //< Calls and Functions clock-native
+static bool moduloNative(int argCount, Value* args) {
+  // Check for 2 arguments
+  if (argCount != 2) {
+    char message[64];
+    snprintf(message, sizeof(message), "Expected 2 arguments but got %d.", argCount);
+    args[-1] = OBJ_VAL(copyString(message, (int)strlen(message)));
+    return false;
+  }
+
+  // Check type of both arguments
+  if (!IS_NUMBER(args[0]) || !IS_NUMBER(args[1])) {
+    args[-1] = OBJ_VAL(copyString("Expected 2 numerical arguments.", 32)); 
+    return false;
+  }
+
+  // Extract the two nums and store the results at the top of the stack
+  int a = AS_NUMBER(args[0]);
+  int b = AS_NUMBER(args[1]);
+  args[-1] = NUMBER_VAL(a % b);
+  return true;
+}
+
+static bool readFileNative(int argCount, Value* args) {
+  char* fileName = AS_STRING(args[0])->chars;
+
+  FILE *fptr = fopen(fileName, "rb");
+
+  if (fptr == NULL) {
+    char message[64];
+    snprintf(message, sizeof(message), "Could not open file %s.", fileName);
+    args[-1] = OBJ_VAL(copyString(message, (int)strlen(message)));
+    return false;
+  }
+
+  // Find the file size
+  fseek(fptr, 0L, SEEK_END);
+  size_t fileSize = ftell(fptr);
+  rewind(fptr);
+
+  // Allocate memory for the file contents
+  if (fileSize > 8192) {
+    args[-1] = OBJ_VAL(copyString("File contents bigger than 8192 limit.", 38));
+    return false;
+  }
+  char* buffer = (char*)malloc(fileSize + 1);
+
+  // Read file contents into buffer
+  size_t bytesRead = fread(buffer, sizeof(char), fileSize, fptr);
+  if (bytesRead < fileSize) {
+    free(buffer);
+    fclose(fptr);
+    args[-1] = OBJ_VAL(copyString("Could not read file.", 20));
+    return false;
+  }
+
+  // Terminal byte and close file
+  buffer[bytesRead] = '\0';
+  fclose(fptr);
+
+  // Copy buffer onto stack and finally free buffer memory
+  ObjString* string = copyString(buffer, (int)bytesRead);
+  free(buffer);
+  args[-1] = OBJ_VAL(string);
+  return true;
+}
+
 static bool sqrtNative(int argCount, Value* args) {
   if (argCount != 1) {
     char message[64];
@@ -158,6 +225,8 @@ void initVM() {
 
   defineNative("clock", clockNative);
 //< Calls and Functions define-native-clock
+  defineNative("readFile", readFileNative);
+  defineNative("modulo", moduloNative);
   defineNative("sqrt", sqrtNative);
 }
 

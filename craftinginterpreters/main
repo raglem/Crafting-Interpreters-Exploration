@@ -1,9 +1,18 @@
 print "";
-print "-----BENCHMARK PROGRAM (With type check) ------";
-print "Sqrt Test: ";
-var start = clock();
-for (var i = 0; i < 1000000; i = i + 1) {
-    sqrt("string");
-}
-print clock() - start;
+
+print "-----Modulo Test-----";
+print "";
+print "5 % 2";
+print modulo(5, 2);
+print "";
+print "12 % 7";
+print modulo(12, 7);
+print "";
+
+print "-----Read File Test-----";
+print "";
+print "Reading test.txt:";
+print readFile("test.txt");
+print "";
+
 print "";
