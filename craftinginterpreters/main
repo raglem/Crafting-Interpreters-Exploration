@@ -1,2 +1,9 @@
-var x = clock("dunno", "more");
-print x;
+print "";
+print "-----BENCHMARK PROGRAM (With type check) ------";
+print "Sqrt Test: ";
+var start = clock();
+for (var i = 0; i < 1000000; i = i + 1) {
+    sqrt("string");
+}
+print clock() - start;
+print "";

@@ -7,6 +7,7 @@
 //> Strings vm-include-string
 #include <string.h>
 //< Strings vm-include-string
+#include <math.h>
 //> Calls and Functions vm-include-time
 #include <time.h>
 //< Calls and Functions vm-include-time
@@ -40,6 +41,24 @@ static bool clockNative(int argCount, Value* args) {
   return true;
 }
 //< Calls and Functions clock-native
+static bool sqrtNative(int argCount, Value* args) {
+  if (argCount != 1) {
+    char message[64];
+    snprintf(message, sizeof(message), "Expected 1 argument but got %d.", argCount);
+    args[-1] = OBJ_VAL(copyString(message, (int)strlen(message)));
+    return false;
+  }
+
+  // Check type of single argument (args[0]) is number
+  if (!IS_NUMBER(args[0])) {
+    args[-1] = OBJ_VAL(copyString("Expected a number argument for sqrt.", 37)); 
+    return false;
+  }
+  // Extract the num and square it with sqrt C function
+  int num = AS_NUMBER(args[0]);
+  args[-1] = NUMBER_VAL(sqrt(num));
+  return true;
+}
 //> reset-stack
 static void resetStack() {
   vm.stackTop = vm.stack;
@@ -139,6 +158,7 @@ void initVM() {
 
   defineNative("clock", clockNative);
 //< Calls and Functions define-native-clock
+  defineNative("sqrt", sqrtNative);
 }
 
 void freeVM() {
