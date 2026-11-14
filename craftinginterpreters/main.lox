@@ -1,0 +1,25 @@
+var a;
+var b;
+
+for (var i = 0; i < 2; i = i + 1) {
+    fun example() {
+        print i;
+    }
+    if (i == 0) {
+        a = example;
+    }
+    else {
+        b = example;
+    }
+}
+
+print "";
+
+print "a: ";
+a();
+print "";
+
+print "b: ";
+b();
+print "";
+

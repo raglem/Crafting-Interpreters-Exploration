@@ -1219,6 +1219,12 @@ static void forStatement() {
 //> for-begin-scope
   beginScope();
 //< for-begin-scope
+
+  // We create variables to track the i within the first statement of the for loop header 
+  Token nameOfLoopI;
+  int loopI = -1;
+  nameOfLoopI.start = NULL;
+
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
 /* Jumping Back and Forth for-statement < Jumping Back and Forth for-initializer
   consume(TOKEN_SEMICOLON, "Expect ';'.");
@@ -1227,7 +1233,9 @@ static void forStatement() {
   if (match(TOKEN_SEMICOLON)) {
     // No initializer.
   } else if (match(TOKEN_VAR)) {
+    nameOfLoopI = parser.current;
     varDeclaration();
+    loopI = current->localCount - 1;
   } else {
     expressionStatement();
   }
@@ -1266,7 +1274,28 @@ static void forStatement() {
   }
 //< for-increment
 
+  // Create a local scope for each iteration
+  // copyVariable will be the local copy particular to this iteration
+  int copyVariable = -1;
+  if (loopI != -1) {
+    beginScope();
+    emitBytes(OP_GET_LOCAL, (uint8_t)loopI);
+    addLocal(nameOfLoopI);
+    markInitialized();
+    copyVariable = current->localCount - 1;
+  }
+
   statement();
+
+  // Have copyVariable store the outer loopI again when the current iteration ends
+  if (loopI != -1) {
+    emitBytes(OP_GET_LOCAL, (uint8_t)copyVariable);
+    emitBytes(OP_SET_LOCAL, (uint8_t)loopI);
+    emitByte(OP_POP);
+
+    endScope();
+  }
+
   emitLoop(loopStart);
 //> exit-jump
 
