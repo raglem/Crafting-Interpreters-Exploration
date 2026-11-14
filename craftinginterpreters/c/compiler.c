@@ -1066,19 +1066,25 @@ static void function(FunctionType type) {
   block();
 
   ObjFunction* function = endCompiler();
-/* Calls and Functions compile-function < Closures emit-closure
-  emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
-*/
-//> Closures emit-closure
-  emitBytes(OP_CLOSURE, makeConstant(OBJ_VAL(function)));
-//< Closures emit-closure
-//> Closures capture-upvalues
 
-  for (int i = 0; i < function->upvalueCount; i++) {
-    emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
-    emitByte(compiler.upvalues[i].index);
+  uint8_t functionConstant = makeConstant(OBJ_VAL(function));
+  if (function->upvalueCount == 0) {
+    // Emit a function as originally implemented before ch. 25
+    // Closure is unnecessary without a single upvalue
+    emitBytes(OP_CONSTANT, functionConstant);
   }
-//< Closures capture-upvalues
+  else {
+    // Have the original code that created the ObjClosure over ObjFunction
+
+    //> Closures emit-closure
+    emitBytes(OP_CLOSURE, functionConstant);
+    //< Closures emit-closure
+
+    for (int i = 0; i < function->upvalueCount; i++) {
+      emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
+      emitByte(compiler.upvalues[i].index);
+    }
+  }
 }
 //< Calls and Functions compile-function
 //> Methods and Initializers method

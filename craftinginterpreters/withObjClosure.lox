@@ -1,0 +1,15 @@
+print "-----With Wrapping ObjClosure-----";
+var start = clock();
+for (var i = 0; i < 100000; i = i + 1) {
+    fun outer() {
+        fun inner() {
+            var a = 5;
+            return a;
+        }
+        return inner;
+    }
+    var inner = outer();
+    inner();
+}
+print clock() - start;
+
