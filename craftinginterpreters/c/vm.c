@@ -129,7 +129,7 @@ static bool sqrtNative(int argCount, Value* args) {
 
 // Helper to get the frame function (it can either be wrapped in closure or not)
 static inline ObjFunction* getFrameFunction(CallFrame* frame) {
-  if (frame->closure->type == OBJ_FUNCTION) {
+  if (objType(frame->closure) == OBJ_FUNCTION) {
     return (ObjFunction*)frame->closure;
   }
   return ((ObjClosure*)frame->closure)->function;

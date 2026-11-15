@@ -12,7 +12,7 @@
 #include "value.h"
 //> obj-type-macro
 
-#define OBJ_TYPE(value)        (AS_OBJ(value)->type)
+#define OBJ_TYPE(value)        (objType(AS_OBJ(value)))
 //< obj-type-macro
 //> is-string
 
@@ -89,14 +89,35 @@ typedef enum {
 //< obj-type
 
 struct Obj {
-  ObjType type;
-//> Garbage Collection is-marked-field
-  bool isMarked;
-//< Garbage Collection is-marked-field
-//> next-field
-  struct Obj* next;
-//< next-field
+  uint64_t everything;
 };
+
+// Define macros to access/maniuplate Obj struct "members"
+// In reality, we're performing bit maniuplation on a 64-bit integer
+static inline ObjType objType(Obj* object) { \
+  // Get the leading byte 
+  return (ObjType)((object->everything >> 56) & 255); // 255 -> 1111 1111
+}
+static inline bool isMarked(Obj* object) { \
+  // Get the second byte then only the last bit of that byte 
+  return (bool)((object->everything >> 48) & 1); // 15 -> 0000 1111
+}
+static inline Obj* objNext(Obj* object) { \
+  // Get the least significant six bytes 
+  return (Obj*)(object->everything & 281474976710656); // 2 ^ 48 (48 bits = 6 bytes)
+}
+static inline void setObjType(ObjType type, Obj* object) { \
+  // Leave the first byte as 00 in the AND so we clear the original value
+  // Same principle for subsequent setters
+  object->everything = (object->everything & 0x00ffffffffffffff) | ((uint64_t)type) << 56;
+}
+static inline void setIsMarked(bool isMarked, Obj* object) { \
+  object->everything = (object->everything & 0xff00ffffffffffff) | ((uint64_t)isMarked) << 48;
+}
+static inline void setObjNext(Obj* next, Obj* object) { \
+  object->everything = (object->everything & 0xffff000000000000) | (uint64_t)next;
+}
+
 //> Calls and Functions obj-function
 
 typedef struct {
@@ -213,7 +234,7 @@ void printObject(Value value);
 //< copy-string-h
 //> is-obj-type
 static inline bool isObjType(Value value, ObjType type) {
-  return IS_OBJ(value) && AS_OBJ(value)->type == type;
+  return IS_OBJ(value) && objType(AS_OBJ(value)) == type;
 }
 
 //< is-obj-type
