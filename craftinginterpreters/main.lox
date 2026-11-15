@@ -1,25 +1,56 @@
-var a;
-var b;
+fun vector(x_param, y_param) {
 
-for (var i = 0; i < 2; i = i + 1) {
-    fun example() {
-        print i;
+    // Utilize upvalue closure for the state variables
+    var x;
+    var y;
+    
+    fun inner(op, other) {
+        // Constructor
+        if (op == "init") {
+            x = x_param;
+            y = y_param;
+        }
+
+        // Getters
+        if (op == "x") {
+            return x;
+        }
+        if (op == "y") {
+            return y;
+        }
+
+        // Use other param getters and construct a new added vector
+        if (op == "add") {
+            var x_sum = inner("x", nil) + other("x", nil);
+            var y_sum = inner("y", nil) + other("y", nil);
+            return vector(x_sum, y_sum);
+        }
     }
-    if (i == 0) {
-        a = example;
-    }
-    else {
-        b = example;
-    }
+    // Use constructor in inner
+    inner("init", nil);
+    return inner;
 }
 
+var v1 = vector(1, 2);
+
+print "Expect 1: ";
+print v1("x", nil);
+
 print "";
 
-print "a: ";
-a();
+print "Expect 2: ";
+print v1("y", nil);
+
 print "";
 
-print "b: ";
-b();
+var v2 = vector(3, 4);
+var v3 = v1("add", v2);
+
+print "Expect 4";
+print v3("x", nil);
+
 print "";
+
+print "Expect 6: ";
+print v3("y", nil);
 
