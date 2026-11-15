@@ -78,6 +78,9 @@ typedef struct {
   int grayCount;
   int grayCapacity;
   Obj** grayStack;
+  // Equivalence between an object's isMarked and currentMark will determine
+  // whether the object is marked as reachable (isMarked == currentMark)
+  bool currentMark;
 //< Garbage Collection vm-gray-stack
 } VM;
 

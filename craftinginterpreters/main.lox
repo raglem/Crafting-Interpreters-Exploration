@@ -1,56 +1,63 @@
-fun vector(x_param, y_param) {
+fun run() {
+    fun vector(x_param, y_param) {
 
-    // Utilize upvalue closure for the state variables
-    var x;
-    var y;
-    
-    fun inner(op, other) {
-        // Constructor
-        if (op == "init") {
-            x = x_param;
-            y = y_param;
-        }
+        // Utilize upvalue closure for the state variables
+        var x;
+        var y;
+        
+        fun inner(op, other) {
+            // Constructor
+            if (op == "init") {
+                x = x_param;
+                y = y_param;
+            }
 
-        // Getters
-        if (op == "x") {
-            return x;
-        }
-        if (op == "y") {
-            return y;
-        }
+            // Getters
+            if (op == "x") {
+                return x;
+            }
+            if (op == "y") {
+                return y;
+            }
 
-        // Use other param getters and construct a new added vector
-        if (op == "add") {
-            var x_sum = inner("x", nil) + other("x", nil);
-            var y_sum = inner("y", nil) + other("y", nil);
-            return vector(x_sum, y_sum);
+            // Use other param getters and construct a new added vector
+            if (op == "add") {
+                var x_sum = inner("x", nil) + other("x", nil);
+                var y_sum = inner("y", nil) + other("y", nil);
+                return vector(x_sum, y_sum);
+            }
         }
+        // Use constructor in inner
+        inner("init", nil);
+        return inner;
     }
-    // Use constructor in inner
-    inner("init", nil);
-    return inner;
+
+    var v1 = vector(1, 2);
+
+    print "Expect 1: ";
+    print v1("x", nil);
+
+    print "";
+
+    print "Expect 2: ";
+    print v1("y", nil);
+
+    print "";
+
+    var v2 = vector(3, 4);
+    var v3 = v1("add", v2);
+
+    print "Expect 4";
+    print v3("x", nil);
+
+    print "";
+
+    print "Expect 6: ";
+    print v3("y", nil);
 }
 
-var v1 = vector(1, 2);
+for(var i = 0; i < 1000000; i = i+1) {
+    run();
+}
 
-print "Expect 1: ";
-print v1("x", nil);
-
-print "";
-
-print "Expect 2: ";
-print v1("y", nil);
-
-print "";
-
-var v2 = vector(3, 4);
-var v3 = v1("add", v2);
-
-print "Expect 4";
-print v3("x", nil);
-
-print "";
-
-print "Expect 6: ";
-print v3("y", nil);
 
