@@ -9,7 +9,6 @@
 //< Hash Tables object-include-table
 #include "value.h"
 #include "vm.h"
-
 //> allocate-obj
 
 #define ALLOCATE_OBJ(type, objectType) \
@@ -19,12 +18,13 @@
 
 static Obj* allocateObject(size_t size, ObjType type) {
   Obj* object = (Obj*)reallocate(NULL, 0, size);
-  setObjType(type, object);
+  object->type = type;
 //> Garbage Collection init-is-marked
-  setIsMarked(false, object);
+  object->isMarked = false;
 //< Garbage Collection init-is-marked
 //> add-to-list
-  setObjNext(vm.objects, object);
+  
+  object->next = vm.objects;
   vm.objects = object;
 //< add-to-list
 //> Garbage Collection debug-log-allocate

@@ -53,7 +53,7 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
 void markObject(Obj* object) {
   if (object == NULL) return;
 //> check-is-marked
-  if (isMarked(object)) return;
+  if (object->isMarked) return;
 
 //< check-is-marked
 //> log-mark-object
@@ -64,7 +64,7 @@ void markObject(Obj* object) {
 #endif
 
 //< log-mark-object
-  setIsMarked(true, object);
+  object->isMarked = true;
 //> add-to-gray-stack
 
   if (vm.grayCapacity < vm.grayCount + 1) {
@@ -103,7 +103,7 @@ static void blackenObject(Obj* object) {
 #endif
 
 //< log-blacken-object
-  switch (objType(object)) {
+  switch (object->type) {
 //> Methods and Initializers blacken-bound-method
     case OBJ_BOUND_METHOD: {
       ObjBoundMethod* bound = (ObjBoundMethod*)object;
@@ -167,7 +167,7 @@ static void freeObject(Obj* object) {
 #endif
 
 //< Garbage Collection log-free-object
-  switch (objType(object)) {
+  switch (object->type) {
 //> Methods and Initializers free-bound-method
     case OBJ_BOUND_METHOD:
       FREE(ObjBoundMethod, object);
@@ -273,17 +273,17 @@ static void sweep() {
   Obj* previous = NULL;
   Obj* object = vm.objects;
   while (object != NULL) {
-    if (isMarked(object)) {
+    if (object->isMarked) {
 //> unmark
-      setIsMarked(false, object);
+      object->isMarked = false;
 //< unmark
       previous = object;
-      object = objNext(object);
+      object = object->next;
     } else {
       Obj* unreached = object;
-      object = objNext(object);
+      object = object->next;
       if (previous != NULL) {
-        setObjNext(object, previous);
+        previous->next = object;
       } else {
         vm.objects = object;
       }
@@ -337,7 +337,7 @@ void collectGarbage() {
 void freeObjects() {
   Obj* object = vm.objects;
   while (object != NULL) {
-    Obj* next = objNext(object);
+    Obj* next = object->next;
     freeObject(object);
     object = next;
   }
