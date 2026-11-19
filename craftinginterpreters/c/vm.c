@@ -215,6 +215,7 @@ void initVM() {
   vm.grayCount = 0;
   vm.grayCapacity = 0;
   vm.grayStack = NULL;
+  vm.currentMark = true;
 //< Garbage Collection init-gray-stack
 //> Global Variables init-globals
 
